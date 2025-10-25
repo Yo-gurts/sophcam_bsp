@@ -1,0 +1,158 @@
+/dts-v1/;
+#include "cv184x_base_arm.dtsi"
+#include "cv184x_asic_qfn.dtsi"
+#include "cv184x_asic_spinand.dtsi"
+#include "cv184x_default_memmap.dtsi"
+
+/ {
+	adc-key2 {
+		compatible = "adc-keys";
+		io-channels = <&saradc0 0>; // ADC1
+		io-channel-names = "buttons";
+		keyup-threshold-microvolt = <4095000>; // raw value
+		poll-interval = <50>; // ms
+		debounce-steps = <2>; // 2次采样值相同才认为按键状态改变
+
+		button-ai {
+			label = "AI";
+			linux,code = <KEY_PLAY>;
+			press-threshold-microvolt = <3780000>;
+		};
+
+		button-vol-down {
+			label = "Volume Down";
+			linux,code = <KEY_VOLUMEDOWN>;
+			press-threshold-microvolt = <2829000>;
+		};
+
+		button-vol-up {
+			label = "Volume Up";
+			linux,code = <KEY_VOLUMEUP>;
+			press-threshold-microvolt = <1890000>;
+		};
+
+		button-cam-focus {
+			label = "Camera Focus";
+			linux,code = <KEY_CAMERA_FOCUS>;
+			press-threshold-microvolt = <930000>;
+		};
+
+		button-cam-cap {
+			label = "Camera Capture";
+			linux,code = <KEY_CAMERA>;
+			press-threshold-microvolt = <0>;
+		};
+	};
+
+	power-key {
+		compatible = "gpio-keys";
+
+		power {
+			label = "power";
+			gpios = <&porte 8 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_POWER>;
+		};
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 100000>;
+		brightness-levels = <
+			0   1   2   3   4   5   6   7
+			8   9  10   11  12  13  14  15
+			16  17  18  19  20  21  22  23
+			24  25  26  27  28  29  30  31
+			32  33  34  35  36  37  38  39
+			40  41  42  43  44  45  46  47
+			48  49  50  51  52  53  54  55
+			56  57  58  59  60  61  62  63
+			64  65  66  67  68  69  70  71
+			72  73  74  75  76  77  78  79
+			80  81  82  83  84  85  86  87
+			88  89  90  91  92  93  94  95
+			96  97  98  99  100 101 102 103
+			104 105 106 107 108 109 110 111
+			112 113 114 115 116 117 118 119
+			120 121 122 123 124 125 126 127
+			128 129 130 131 132 133 134 135
+			136 137 138 139 140 141 142 143
+			144 145 146 147 148 149 150 151
+			152 153 154 155 156 157 158 159
+			160 161 162 163 164 165 166 167
+			168 169 170 171 172 173 174 175
+			176 177 178 179 180 181 182 183
+			184 185 186 187 188 189 190 191
+			192 193 194 195 196 197 198 199
+			200 201 202 203 204 205 206 207
+			208 209 210 211 212 213 214 215
+			216 217 218 219 220 221 222 223
+			224 225 226 227 228 229 230 231
+			232 233 234 235 236 237 238 239
+			240 241 242 243 244 245 246 247
+			248 249 250 251 252 253 254 255 >;
+		default-brightness-level = <200>;
+		post-pwm-on-delay-ms = <10>;
+	};
+
+	/delete-node/ ethernet@4070000;
+	/delete-node/ keyscan@03040000;
+	/delete-node/ irrx@0502E000;
+	/delete-node/ i2c@04020000; // i2c2
+	/delete-node/ i2c@04030000; // i2c3
+	/delete-node/ i2c@04040000; // i2c4
+	/delete-node/ i2s@4110000; // i2s1 // 用于数字麦
+	/delete-node/ i2s@4120000; // i2s2 // 用于数字麦
+	// /detete-node/ spi0@04180000; // spi0
+	// /detete-node/ spi1@04190000; // spi1
+	/delete-node/ spi2@041A0000; // spi2
+	/delete-node/ spi3@041B0000; // spi3
+	/delete-node/ serial@04160000; // uart2
+	/delete-node/ serial@04170000; // uart3
+	/delete-node/ serial@041C0000; // uart4
+
+	aliases {
+		/delete-property/ ethernet0;
+		/delete-property/ serial2;
+		/delete-property/ serial3;
+		/delete-property/ serial4;
+		/delete-property/ i2c2;
+		/delete-property/ i2c3;
+		/delete-property/ i2c4;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+	/* FMUX_GPIO_REG iic_func_sel gpio_func_sel */
+	scl-pinmux = <0x03001070 0x0 0x3>;	// CV_SCL(0)/XGPIOA[28](3)
+	sda-pinmux = <0x03001074 0x0 0x3>;	// CV_SDA(0)/XGPIOA[29](3)
+	/* gpio port */
+	scl-gpios = <&porta 28 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&porta 29 GPIO_ACTIVE_HIGH>;
+
+	touchscreen@38 {
+		compatible = "fts_ts,ft3x07";
+		reg = <0x38>;
+		touch,reset-gpio = <&porta 30 GPIO_ACTIVE_LOW>;
+		touch,irq-gpio = <&porta 14 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <100000>;
+	/* FMUX_GPIO_REG iic_func_sel gpio_func_sel */
+	scl-pinmux = <0x03001128 0x2 0x3>;	// PAD_ETH_TXP/IIC1_SCL/XGPIOB[25]
+	sda-pinmux = <0x0300112C 0x2 0x3>;	// PAD_ETH_TXM/IIC1_SDA/XGPIOC[24]
+	/* gpio port */
+	scl-gpios = <&portb 25 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&portb 24 GPIO_ACTIVE_HIGH>;
+};
+
+&wifisd{
+	status = "okay";
+};
+
+&wifi_pin{
+	poweron-gpio = <&porta 19 GPIO_ACTIVE_HIGH>;
+};

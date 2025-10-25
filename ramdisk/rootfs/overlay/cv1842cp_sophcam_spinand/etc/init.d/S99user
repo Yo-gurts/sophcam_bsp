@@ -1,0 +1,54 @@
+#!/bin/sh
+${CVI_SHOPTS}
+#
+# Start firmware
+#
+export USERDATAPATH=/mnt/data/
+export SYSTEMPATH=/system/
+
+case "$1" in
+  start)
+        cvi_pinmux -w JTAG_CPU_TCK/PWM_6
+        echo "init mpp system..."
+        if [ -f $SYSTEMPATH/ko/loadsystemko.sh ]; then
+                sh $SYSTEMPATH/ko/loadsystemko.sh
+        fi
+
+        echo "Starting app..."
+        if [ -f $USERDATAPATH/auto.sh ]; then
+                usleep 30000
+                . $USERDATAPATH/auto.sh &
+                exit 1
+        fi
+        if [ -f $SYSTEMPATH/auto.sh ]; then
+                usleep 30000
+                . $SYSTEMPATH/auto.sh &
+        fi
+
+        # reset sensor(B26)
+        echo 474 > /sys/class/gpio/export
+        echo out > /sys/class/gpio/gpio474/direction
+        echo 1 > /sys/class/gpio/gpio474/value
+        echo 474 > /sys/class/gpio/unexport
+
+	# record alios log
+	alios_cli -m 1 -c 0 2>&1 | logger -t alios -p local7.info &
+
+        # run wpa_supplicant after load ko
+        wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -B
+        # run sophcam
+        if [ -f $USERDATAPATH/bin/sophcam ]; then
+                chmod +x $USERDATAPATH/bin/sophcam
+                $USERDATAPATH/bin/sophcam </dev/null 2>&1 | logger -t sophcam &
+        fi
+        ;;
+  stop)
+        ;;
+  restart|reload)
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?
