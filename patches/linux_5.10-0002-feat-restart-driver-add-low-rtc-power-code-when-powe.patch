@@ -1,0 +1,41 @@
+From 1ea58793a6cf0e4b85b5807f7b218cd4eff35f49 Mon Sep 17 00:00:00 2001
+From: "guochu.yi" <guochu.yi@sophgo.com>
+Date: Thu, 11 Sep 2025 20:39:36 +0800
+Subject: [PATCH 2/2] [feat] restart driver add low rtc power code when
+ poweroff
+
+Change-Id: I386e50c8ac70859140b77864b8ad076a9ced6a64
+---
+ drivers/power/reset/cvi-reboot.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/power/reset/cvi-reboot.c b/drivers/power/reset/cvi-reboot.c
+index 05b502e83..705e6bd7e 100644
+--- a/drivers/power/reset/cvi-reboot.c
++++ b/drivers/power/reset/cvi-reboot.c
+@@ -51,6 +51,22 @@ static void cvi_do_pwroff(void)
+ 	void __iomem *REG_RTC_CTRL_BASE = base;
+ 	void __iomem *REG_RTC_BASE = base + 0x1000;
+ 
++	// RTC low power
++	writel(0x2, REG_RTC_CTRL_BASE + 0xAC); //  hold register status
++	// 关闭mcu
++	writel(0x30002, REG_RTC_CTRL_BASE + 0x84);
++	writel(0x000f000b, REG_RTC_CTRL_BASE + 0x80);
++	// sram 进入sleep
++	writel(0x10024000, REG_RTC_CTRL_BASE + 0x98);
++	// 关闭25M clk
++	writel(0x20328C00, REG_RTC_CTRL_BASE + 0x28);
++	writel(0xE0328C00, REG_RTC_CTRL_BASE + 0x28);
++	// 使内部macro进入更低功耗模式
++	writel(0x1, REG_RTC_BASE + 0x490);
++	writel(0x1, REG_RTC_BASE + 0x48c);
++	writel(0x0, REG_RTC_BASE + 0x48c);
++	writel(0x2, REG_RTC_CTRL_BASE + 0xac);
++
+ 	/* Enable power suspend wakeup source mask */
+ 	writel(0x1, REG_RTC_BASE + 0x3C); // 1 = select prdata from 32K domain
+ 
+-- 
+2.25.1
+

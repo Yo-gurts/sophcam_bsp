@@ -11,6 +11,7 @@ function print_usage() {
     echo "  --hostslave             Fetch from server: 10.80.65.11"
     echo "  --normal                Clone the repo with all branches"
     echo "  --reproduce xxx.txt     Reproduce the repo as per the commit_id in xxx.txt"
+    echo "  --applypatch xxx.txt    Apply patches from sophcam_bsp/patches directory"
     echo ""
     echo "Example:"
     echo "  $0 --gitclone cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml"
@@ -20,6 +21,7 @@ function print_usage() {
     echo "  $0 --gitclone cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml --hostslave --reproduce git_version_2023-08-18.txt"
     echo "  $0 --run cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml git status"
     echo "  $0 --run cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml st"
+    echo "  $0 --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt"
 }
 
 # 打印等级及颜色设置
@@ -66,6 +68,9 @@ REPRODUCE=0
 # git run enable
 RUN=0
 
+# apply patch enable
+APPLYPATCH=0
+
 # 获取脚本所在目录的绝对路径
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -106,6 +111,12 @@ while [[ $# -gt 0 ]]; do
            shift
            gitver_txt=$1
            REPRODUCE=1
+           shift
+           ;;
+        --applypatch)
+           shift
+           gitver_txt=$1
+           APPLYPATCH=1
            shift
            ;;
         --force)
@@ -422,10 +433,144 @@ function reproduce_repo {
     done < ${xml_file}
 }
 
+# git apply patch function
+function git_applypatch {
+    # 获取patches目录路径
+    patches_dir="$SCRIPT_DIR/../patches"
+
+    # 检查patches目录是否存在
+    if [[ ! -d $patches_dir ]]; then
+        echo -e "${RED}错误: 未找到patches目录: $patches_dir${NC}"
+        exit 1
+    fi
+
+    # 将txt文件路径转换为绝对路径
+    gitver_txt_abs=$(cd $(dirname "$gitver_txt") && pwd)/$(basename "$gitver_txt")
+
+    # 检查txt文件是否存在
+    if [[ ! -f $gitver_txt_abs ]]; then
+        echo -e "${RED}错误: 未找到git版本文件: $gitver_txt_abs${NC}"
+        exit 1
+    fi
+
+    # 保存当前目录
+    current_dir=$(pwd)
+
+    # 创建一个临时文件来存储唯一的仓库名称
+    temp_file=$(mktemp)
+
+    # 获取patches目录下所有的patch文件，提取唯一的仓库名称
+    for patch_file in "$patches_dir"/*.patch; do
+        if [[ -f $patch_file ]]; then
+            # 提取仓库名称（patch文件名的前缀）
+            repo_name=$(basename "$patch_file" | cut -d'-' -f1)
+            # 将仓库名称添加到临时文件
+            echo "$repo_name" >> "$temp_file"
+        fi
+    done
+
+    # 对临时文件中的仓库名称进行去重
+    sort -u "$temp_file" -o "$temp_file"
+
+    # 读取临时文件，处理每个唯一的仓库
+    while read -r repo_name; do
+        # 直接使用仓库名称作为路径，不再从XML中获取
+        local repo_path="$repo_name"
+
+        if [[ -d "$PWD/$repo_path" ]]; then
+            echo -e "\n${BLUE}正在处理仓库: $repo_path${NC}"
+
+            # 进入仓库目录
+            pushd "$PWD/$repo_path" > /dev/null
+
+            # 检查是否有未提交的改动
+            local has_uncommitted_changes=0
+            if [[ -n $(git status --porcelain) ]]; then
+                has_uncommitted_changes=1
+                echo -e "${YELLOW}警告: 仓库 $repo_path 存在未提交的修改${NC}"
+            fi
+
+            # 获取当前commit-id
+            local current_commit_id=$(git rev-parse HEAD)
+
+            # 从txt文件中获取期望的commit-id
+            local expected_commit_id=$(get_commit_id "$repo_name" "$gitver_txt_abs")
+            echo -e "${BLUE}仓库 $repo_path 的期望commit-id: $expected_commit_id${NC}"
+
+            # 检查commit-id是否匹配
+            local commit_id_mismatch=0
+            if [[ -n $expected_commit_id ]] && [[ "$current_commit_id" != "$expected_commit_id" ]]; then
+                commit_id_mismatch=1
+                echo -e "${YELLOW}警告: 仓库 $repo_path 的commit-id不匹配${NC}"
+                echo -e "${YELLOW}  当前: $current_commit_id${NC}"
+                echo -e "${YELLOW}  期望: $expected_commit_id${NC}"
+            fi
+
+            # 如果有未提交的改动或commit-id不匹配，提示用户
+            if [[ $has_uncommitted_changes -eq 1 ]] || [[ $commit_id_mismatch -eq 1 ]]; then
+                echo -e "${YELLOW}‼️是否要继续应用patch，继续将会丢弃本地改动? (y/n)${NC}"
+                # 清空输入缓冲区并从终端读取输入
+                read -r continue_apply </dev/tty
+
+                if [[ "$continue_apply" != "y" ]] && [[ "$continue_apply" != "Y" ]]; then
+                    echo -e "${BLUE}跳过仓库 $repo_path 的补丁应用${NC}"
+                    popd > /dev/null
+                    continue
+                fi
+
+                # 如果commit-id不匹配，重置到期望的commit-id
+                if [[ $commit_id_mismatch -eq 1 ]] && [[ -n $expected_commit_id ]]; then
+                    echo -e "${BLUE}正在将仓库 $repo_path 重置到提交: $expected_commit_id${NC}"
+                    git reset --hard "$expected_commit_id" || {
+                        echo -e "${RED}重置仓库 $repo_path 失败${NC}"
+                        popd > /dev/null
+                        continue
+                    }
+                fi
+            fi
+
+            # 应用所有与该仓库相关的patch
+            echo -e "${BLUE}正在为仓库应用补丁: $repo_path${NC}"
+            for repo_patch_file in "$patches_dir"/${repo_name}-*.patch; do
+                if [[ -f "$repo_patch_file" ]]; then
+                    echo -e "${GREEN}正在应用补丁: $(basename "$repo_patch_file")${NC}"
+                    git am --keep --ignore-whitespace "$repo_patch_file" || {
+                        echo -e "${RED}应用补丁失败: $(basename "$repo_patch_file")${NC}"
+                        # 尝试使用git am --reject
+                        echo -e "${YELLOW}尝试使用git am --reject...${NC}"
+                        git am --abort
+                        git am --reject --ignore-whitespace "$repo_patch_file" || {
+                            echo -e "${RED}使用git am --reject应用补丁失败: $(basename "$repo_patch_file")${NC}"
+                            git am --abort
+                        }
+                    }
+                fi
+            done
+
+            # 返回初始目录
+            popd > /dev/null
+        else
+            echo -e "${YELLOW}警告: 在SDK路径中未找到仓库 $repo_name${NC}"
+            echo -e "${YELLOW}请在当前SDK路径中创建指向该仓库的软链接${NC}"
+        fi
+    done < "$temp_file"
+
+    # 清理临时文件
+    rm -f "$temp_file"
+
+    echo -e "\n${GREEN}补丁应用过程已完成${NC}"
+}
+
 function main {
     # 如果启用了 git run 功能，只执行 git_run 函数
     if [ $RUN -eq 1 ]; then
         git_run
+        return
+    fi
+
+    # 如果启用了 apply patch 功能，只执行 git_applypatch 函数
+    if [ $APPLYPATCH -eq 1 ]; then
+        git_applypatch
         return
     fi
 

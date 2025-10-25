@@ -18,6 +18,9 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
 # 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
 ./sophcam_bsp/scripts/repos.sh --gitclone ./sophcam_bsp/scripts/sdk-cv184x.xml --reproduce ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt
 
+# 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
+./sophcam_bsp/scripts/repos.sh --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26-patch.txt
+
 # 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
 ./sophcam_bsp/scripts/sync.sh
 ```
@@ -49,6 +52,22 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
   ./scripts/rename.sh sophcam projectname
   ./scripts/rename.sh SOPHCAM PROJECTNAME
   ```
+- 如果需要修改SDK本身，建议修改后，将patch保存到`sophcam_bsp/patches`目录下，并以`xxx-0001-xxx.patch`格式命名，其中`xxx`为文件夹的名称。这样其他人拉代码之后，可以方便的应用patch。以linux_5.10为例：
+  ```bash
+  cd linux_5.10
+  # 假设有两笔patch
+  git format-patch -o ../sophcam_bsp/patches/ -2
+  # 重命名patch
+  cd ../sophcam_bsp/patches/
+  mv 0001-xxx.patch linux_5.10-0001-xxx.patch
+  mv 0002-xxx.patch linux_5.10-0002-xxx.patch
+  ```
+- 使用`applypatch`命令应用patch：
+  ```bash
+  cd SDK_CV184X
+  ./sophcam_bsp/scripts/repos.sh --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26-patch.txt
+  ```
+  该命令会自动提取patches目录下文件的前缀，确定是哪个仓库的patch，并进行应用。如果仓库当前存在未提交的改动或者与指定的txt文件中的commit-id不匹配，会提示用户是否继续应用patch。如果用户选择继续，会先重置到指定的commit-id，然后再应用patch。
 
 ## SDK 编译
 
