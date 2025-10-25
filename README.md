@@ -1,21 +1,21 @@
-# Nana project
+# Sophcam project
 
-Chip: cv1842cp
-Toolchain: musl_arm32
-Board: sophcam
+- Chip: cv1842cp
+- Toolchain: musl_arm32
+- Board: sophcam
 
 ## 代码拉取
 
-‼️不要尝试更改相对路径，按照步骤来！
-‼️使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
+- ‼️不要尝试更改相对路径，按照步骤来！
+- ‼️使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
 
 ```bash
-mkdir v6.x.x && cd v6.x.x
+mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码
 git clone git@github.com:Yo-gurts/sophcam_bsp.git
 
-# 拉取 SDK 代码
+# 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
 ./sophcam_bsp/scripts/repos.sh --gitclone ./sophcam_bsp/scripts/sdk-cv184x.xml --reproduce ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt
 
 # 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
@@ -32,11 +32,29 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
 ./sophcam_bsp/scripts/repos.sh --run ./sophcam_bsp/scripts/sdk-cv184x.xml git status
 ```
 
+## 代码更改与脚本使用
+
+- 板卡特定的所有的代码更改都应该在 `sophcam_bsp` 目录下进行，不要直接在 `SDK_CV184X` 目录下进行更改。
+  ```bash
+  # 在sophcam_bsp 目录下进行代码更改后，需要执行下面的命令来同步到SDK
+  ./sophcam_bsp/scripts/sync.sh
+  # 使用 -c 参数可以检查是否有未同步的更改
+  ./sophcam_bsp/scripts/sync.sh -c
+  ```
+- 所有的脚本都应该在 `SDK_CV184X` 目录下运行，不支持在其他目录下运行。
+- 此项目下的配置是基于算能的demo板子，若硬件有差异，建议更具实际情况修改配置。可以选择fork此项目，然后根据实际情况修改配置，可以使用`scripts/rename.sh`脚本将项目名称改为自己的项目名称，原理是遍历所有文件内容、文件名、目录名，做简单的替换，大小写敏感。
+  ```bash
+  # 重命名项目名称为自己的项目名称，大小写都需要更改
+  cd sophcam_bsp
+  ./scripts/rename.sh sophcam projectname
+  ./scripts/rename.sh SOPHCAM PROJECTNAME
+  ```
+
 ## SDK 编译
 
 ```bash
-# TDL SDK 编译有报错
-export TPU_REL=0; source build/envsetup_soc.sh
+# 需要设置TPU_REL=1，应用依赖TPU相关的库
+export TPU_REL=1; source build/envsetup_soc.sh
 defconfig cv1842cp_sophcam_spinand
 
 clean_all && build_all
