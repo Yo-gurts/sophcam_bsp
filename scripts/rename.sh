@@ -17,7 +17,7 @@ echo "=== 开始替换 '$OLD' → '$NEW' ==="
 
 # === 第1阶段：替换文件内容 ===
 echo "--- 替换文件内容 ---"
-find . -type f | while read -r file; do
+find . -type f -not -path "*/.git/*" -not -path "./.git" | while read -r file; do
     # 跳过二进制文件
     if file "$file" | grep -q "text"; then
         # 使用 sed 替换
@@ -28,7 +28,7 @@ done
 
 # === 第2阶段：重命名文件（从深层路径开始）===
 echo "--- 重命名文件 ---"
-find . -depth -type f -name "*${OLD}*" | while read -r file; do
+find . -depth -type f -name "*${OLD}*" -not -path "*/.git/*" -not -path "./.git" | while read -r file; do
     newfile="$(dirname "$file")/$(basename "$file" | sed "s/${OLD}/${NEW}/g")"
     mv "$file" "$newfile"
     echo "文件重命名: $file → $newfile"
@@ -36,11 +36,10 @@ done
 
 # === 第3阶段：重命名目录 ===
 echo "--- 重命名目录 ---"
-find . -depth -type d -name "*${OLD}*" | while read -r dir; do
+find . -depth -type d -name "*${OLD}*" -not -path "*/.git/*" -not -path "./.git" | while read -r dir; do
     newdir="$(dirname "$dir")/$(basename "$dir" | sed "s/${OLD}/${NEW}/g")"
     mv "$dir" "$newdir"
     echo "目录重命名: $dir → $newdir"
 done
 
 echo "=== 全部完成 ==="
-
