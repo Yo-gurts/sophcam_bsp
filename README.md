@@ -19,7 +19,7 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
 ./sophcam_bsp/scripts/repos.sh --gitclone ./sophcam_bsp/scripts/sdk-cv184x.xml --reproduce ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt
 
 # 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
-./sophcam_bsp/scripts/repos.sh --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26-patch.txt
+./sophcam_bsp/scripts/repos.sh --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt
 
 # 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
 ./sophcam_bsp/scripts/sync.sh
