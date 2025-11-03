@@ -74,7 +74,7 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
 ```bash
 # 需要设置TPU_REL=1，应用依赖TPU相关的库
 export TPU_REL=1; source build/envsetup_soc.sh
-defconfig cv1842cp_sophcam_spinand
+defconfig cv1842cp_sm3_81_spinand
 
 clean_all && build_all
 ```
