@@ -295,7 +295,7 @@ function git_clone {
         fi
 
         # 将 commit-msg 文件添加到 .git/hooks/ 目录下
-        cp $SCRIPT_DIR/commit-msg $PWD/$path/.git/hooks/commit-msg
+        # cp $SCRIPT_DIR/commit-msg $PWD/$path/.git/hooks/commit-msg
 
         # 替换 .git/config 中的 10.80.65.11 为 gerrit-ai.sophgo.vip
         sed -i 's/10.80.65.11/gerrit-ai.sophgo.vip/g' $PWD/$path/.git/config

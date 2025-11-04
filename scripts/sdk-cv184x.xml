@@ -22,5 +22,4 @@
     <project name="libsophon"/>
     <project name="osal"/>
     <project name="rt-thread"/>
-    <project name="buildroot" remote_url="git@github.com:Yo-gurts/buildroot.git" revision="master"/>
 </manifest>
