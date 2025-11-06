@@ -139,30 +139,11 @@ TARGET_RAMDISK="$CURRENT_DIR/ramdisk/rootfs/overlay/cv1842cp_sm3_81_spinand"
 if [ "$CHECK_MODE" = "true" ]; then
     echo -e "${BLUE}执行检查模式...${NC}"
     check_sync_status "$SOURCE_BUILD" "$TARGET_BUILD" "build目录"
-    BUILD_RESULT=$?
-
     check_sync_status "$SOURCE_RAMDISK" "$TARGET_RAMDISK" "ramdisk目录"
-    RAMDISK_RESULT=$?
-
     check_sync_status "$SOURCE_ALIOS" "$TARGET_ALIOS" "alios目录"
-    ALIOS_RESULT=$?
 else
     echo -e "${BLUE}执行同步模式...${NC}"
     sync_directory "$SOURCE_BUILD" "$TARGET_BUILD" "build目录" "$REVERSE_MODE"
-    BUILD_RESULT=$?
-
     sync_directory "$SOURCE_RAMDISK" "$TARGET_RAMDISK" "ramdisk目录" "$REVERSE_MODE"
-    RAMDISK_RESULT=$?
-
     sync_directory "$SOURCE_ALIOS" "$TARGET_ALIOS" "alios目录" "$REVERSE_MODE"
-    ALIOS_RESULT=$?
-fi
-
-# 检查结果
-if [ $BUILD_RESULT -eq 0 ] && [ $RAMDISK_RESULT -eq 0 ] && [ $ALIOS_RESULT -eq 0 ]; then
-    echo -e "${GREEN}✅ 所有操作完成成功${NC}"
-    exit 0
-else
-    echo -e "${RED}❌ 部分操作失败${NC}"
-    exit 1
 fi

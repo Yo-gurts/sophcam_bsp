@@ -52,15 +52,15 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
   ./scripts/rename.sh sophcam projectname
   ./scripts/rename.sh SOPHCAM PROJECTNAME
   ```
-- 如果需要修改SDK本身，建议修改后，将patch保存到`sophcam_bsp/patches`目录下，并以`xxx-0001-xxx.patch`格式命名，其中`xxx`为文件夹的名称。这样其他人拉代码之后，可以方便的应用patch。以linux_5.10为例：
+- 如果需要修改SDK本身，建议修改后，将patch保存到`sophcam_bsp/patches`目录下，并以`xxx--0001-xxx.patch`格式命名，其中`xxx`为文件夹的名称，以`--`分隔。这样其他人拉代码之后，可以方便的应用patch。以linux_5.10为例：
   ```bash
   cd linux_5.10
   # 假设有两笔patch
   git format-patch -o ../sophcam_bsp/patches/ -2
   # 重命名patch
   cd ../sophcam_bsp/patches/
-  mv 0001-xxx.patch linux_5.10-0001-xxx.patch
-  mv 0002-xxx.patch linux_5.10-0002-xxx.patch
+  mv 0001-xxx.patch linux_5.10--0001-xxx.patch
+  mv 0002-xxx.patch linux_5.10--0002-xxx.patch
   ```
 - 使用`applypatch`命令应用patch：
   ```bash

@@ -463,7 +463,8 @@ function git_applypatch {
     for patch_file in "$patches_dir"/*.patch; do
         if [[ -f $patch_file ]]; then
             # 提取仓库名称（patch文件名的前缀）
-            repo_name=$(basename "$patch_file" | cut -d'-' -f1)
+            # 使用sed来处理双横线分隔符
+            repo_name=$(basename "$patch_file" | sed 's/--.*//')
             # 将仓库名称添加到临时文件
             echo "$repo_name" >> "$temp_file"
         fi
@@ -531,7 +532,7 @@ function git_applypatch {
 
             # 应用所有与该仓库相关的patch
             echo -e "${BLUE}正在为仓库应用补丁: $repo_path${NC}"
-            for repo_patch_file in "$patches_dir"/${repo_name}-*.patch; do
+            for repo_patch_file in "$patches_dir"/${repo_name}--*.patch; do
                 if [[ -f "$repo_patch_file" ]]; then
                     echo -e "${GREEN}正在应用补丁: $(basename "$repo_patch_file")${NC}"
                     git am --keep --ignore-whitespace "$repo_patch_file" || {
