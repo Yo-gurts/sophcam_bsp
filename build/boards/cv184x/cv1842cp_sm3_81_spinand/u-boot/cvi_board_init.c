@@ -21,6 +21,8 @@ int cvi_board_init(void)
         mmio_write_32(0x03009078, 0x0f00);
         mmio_write_32(0x03009074, 0x606);
         mmio_write_32(0x03009070, 0x606);
+        /* AI_LED default choice */
+        PINMUX_CONFIG(PAD_ETH_RXP, PWM_15);
         /* CAM_LED */
         PINMUX_CONFIG(PWR_GPIO0, PWR_GPIO_0);
 
