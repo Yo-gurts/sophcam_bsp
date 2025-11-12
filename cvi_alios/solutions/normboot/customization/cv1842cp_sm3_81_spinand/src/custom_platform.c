@@ -27,12 +27,18 @@ void _GPIOSetValue(u8 gpio_grp, u8 gpio_num, u8 level)
 }
 void PLATFORM_SpkMute(int value)
 {
+	static int run_once = 0;
 	u8 gpio_spken_r_grp = 4;
 	u8 gpio_spken_r_num = 2;
 #if defined(CONFIG_CHIP_cv1842hp) || defined(CONFIG_CHIP_cv1843hp) || defined(CONFIG_CHIP_cv1841h)
 	u8 gpio_spken_l_grp;
 	u8 gpio_spken_l_num;
 #endif
+
+	if(run_once) {
+		return;
+	}
+	run_once = 1;
 
 #if defined(CONFIG_CHIP_cv1841c) || defined(CONFIG_CHIP_cv1842cp)
 	gpio_spken_r_grp = 4;
@@ -216,7 +222,6 @@ int PLATFORM_PanelInit(void)
 #if (!defined(CONFIG_SUPPORT_VO) || (CONFIG_SUPPORT_VO))
 #if CONFIG_PANEL_ST7703
 	u8 bl_port = 0, bl_pin = 18;
-	_GPIOSetValue(bl_port, bl_pin, 1);
 
 	rst_port = 4;
 	rst_pin = 3;
@@ -226,6 +231,7 @@ int PLATFORM_PanelInit(void)
 	udelay(100 * 1000);
 	_GPIOSetValue(rst_port, rst_pin, 1);
 	udelay(20 * 1000);
+	_GPIOSetValue(bl_port, bl_pin, 1);
 	printf("panel reset success\n");
 #endif
 #endif
