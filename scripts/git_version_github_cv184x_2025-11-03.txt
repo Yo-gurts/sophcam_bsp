@@ -56,7 +56,7 @@ project_name: kissfft
 commit_id: 7bce4153c6bc8aba2db0e889e576f9d00505cbe1 README.md: Tweak wording (#100)
 
 project_name: tdl_sdk
-commit_id: a7c8987444936ef9147215f0a602d3f75327e660 [fix] fix isp_image_classification.cpp bug
+commit_id: 44ec202de2a21522837e74595bcc0f171f923b78 [feat](framework) update to support io tensor memory share
 
 project_name: linux_5.10
 commit_id: cc48bfc62e316e09045c40a495e0a833fc4e6052 linux_5.10: weekly rls 2025.11.03
