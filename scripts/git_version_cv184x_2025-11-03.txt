@@ -71,7 +71,7 @@ project_name: ramdisk
 commit_id: a67647283ba99941c92014e6401a211e2427cc47 Merge "[fix](busybox): syslogd not ignore syslogd.conf [description ]:NA [root   cause]:NA [JIRA      ID]:NA [chip project]:NA [side effects]:NA [Affected *.ko/*.so/*.a] :NA" into Mars3_dev
 
 project_name: tdl_sdk
-commit_id: fdca2018fc1154b7f13a8b7c7118eaa503cebade [feat] enable asr regression
+commit_id: 44ec202de2a21522837e74595bcc0f171f923b78 [feat](framework) update to support io tensor memory share
 
 project_name: linux_5.10
 commit_id: 98fca074aece6ee4a3397b88908a2d3561a5e7d8 Merge "[fix](spinor): workaround solution for spi-nor rx fifo overflow [description ]:NA [root   cause]:NA [JIRA      ID]:CV184XSDK-681 [chip project]:NA [side effects]:NA [Affected *.ko/*.so/*.a] :NA" into Mars3_dev
