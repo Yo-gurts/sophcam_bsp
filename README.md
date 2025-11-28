@@ -61,6 +61,8 @@ git clone git@github.com:Yo-gurts/sophcam_bsp.git
   cd ../sophcam_bsp/patches/
   mv 0001-xxx.patch linux_5.10--0001-xxx.patch
   mv 0002-xxx.patch linux_5.10--0002-xxx.patch
+  # 批量重命名
+  for f in 00*.patch; do mv "$f" "xxx--$f"; done
   ```
 - 使用`applypatch`命令应用patch：
   ```bash
