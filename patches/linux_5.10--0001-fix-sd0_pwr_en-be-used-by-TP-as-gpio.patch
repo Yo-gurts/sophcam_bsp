@@ -1,7 +1,7 @@
-From 50ef7502673958ce7a114918e2641588659b4bb9 Mon Sep 17 00:00:00 2001
+From cfa1b0f30b4d2f3bbed25eaca7c2eda507cbffab Mon Sep 17 00:00:00 2001
 From: "song.yu" <song.yu@sophgo.com>
 Date: Wed, 13 Aug 2025 11:51:39 +0800
-Subject: [PATCH 1/2] [fix](aicamera) sd0_pwr_en be used by TP as gpio
+Subject: [PATCH 1/2] fix: sd0_pwr_en be used by TP as gpio
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

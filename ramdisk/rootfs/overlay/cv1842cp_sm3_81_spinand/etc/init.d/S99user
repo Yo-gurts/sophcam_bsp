@@ -31,16 +31,19 @@ case "$1" in
         echo 1 > /sys/class/gpio/gpio474/value
         echo 474 > /sys/class/gpio/unexport
 
-	# record alios log
-	alios_cli -m 1 -c 0 2>&1 | logger -t alios -p local7.info &
+        # record alios log
+        alios_cli -m 1 -c 0 2>&1 | logger -t alios -p local7.info &
 
-        # run wpa_supplicant after load ko
-        wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -B
         # run sophcam
         if [ -f $USERDATAPATH/bin/sophcam ]; then
                 chmod +x $USERDATAPATH/bin/sophcam
                 $USERDATAPATH/bin/sophcam </dev/null 2>&1 | logger -t sophcam &
         fi
+
+        # run wpa_supplicant after app start
+        wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -B
+        ifconfig wlan0 down
+
         ;;
   stop)
         ;;

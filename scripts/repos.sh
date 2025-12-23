@@ -11,7 +11,7 @@ function print_usage() {
     echo "  --hostslave             Fetch from server: 10.80.65.11"
     echo "  --normal                Clone the repo with all branches"
     echo "  --reproduce xxx.txt     Reproduce the repo as per the commit_id in xxx.txt"
-    echo "  --applypatch xxx.txt    Apply patches from sophcam_bsp/patches directory"
+    echo "  --applypatch xxx.txt    Apply patches from sm3_81_bsp/patches directory"
     echo ""
     echo "Example:"
     echo "  $0 --gitclone cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml"
@@ -21,7 +21,7 @@ function print_usage() {
     echo "  $0 --gitclone cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml --hostslave --reproduce git_version_2023-08-18.txt"
     echo "  $0 --run cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml git status"
     echo "  $0 --run cvi_manifest/golden/cv181x_cv180x_v4.1.0.xml st"
-    echo "  $0 --applypatch ./sophcam_bsp/scripts/sdk-cv184x-2025-09-26.txt"
+    echo "  $0 --applypatch ./sm3_81_bsp/scripts/sdk-cv184x-2025-09-26.txt"
 }
 
 # 打印等级及颜色设置
@@ -178,6 +178,22 @@ function st {
     echo -e "${BLUE}==========================================================================${NC}"
 }
 
+# lp function (只检查本地未推送的提交)
+function lp {
+    local remote=$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)" 2>/dev/null)
+    if [ -z "$remote" ]; then
+        echo -e "${YELLOW}当前分支没有追踪远程分支${NC}"
+    else
+        local local_commits=$(git log ${remote}..HEAD --color --pretty=format:'%Cred%h%Creset - %s %Cgreen(%cr) <%an>%Creset' 2>/dev/null)
+        if [ -n "$local_commits" ]; then
+            echo -e "${YELLOW}本地存在未同步到远程仓库的提交 (${FAIL_STATUS}):${NC}"
+            echo "$local_commits"
+        else
+            echo -e "${GREEN}当前分支已经全部同步到远程仓库 (${OK_STATUS} ).${NC}"
+        fi
+    fi
+}
+
 # release 函数
 # 远程仓库名称（分支）: commit_id - commit_message (time) <author>
 function release {
@@ -230,6 +246,8 @@ function git_run {
                 st
             elif [[ "${RUN_COMMAND[0]}" == "release" ]]; then
                 release
+            elif [[ "${RUN_COMMAND[0]}" == "lp" ]]; then
+                lp
             else
                 # 执行传递进来的命令
                 "${RUN_COMMAND[@]}"
@@ -535,7 +553,7 @@ function git_applypatch {
             for repo_patch_file in "$patches_dir"/${repo_name}--*.patch; do
                 if [[ -f "$repo_patch_file" ]]; then
                     echo -e "${GREEN}正在应用补丁: $(basename "$repo_patch_file")${NC}"
-                    git am --keep --ignore-whitespace "$repo_patch_file" || {
+                    git am --ignore-whitespace "$repo_patch_file" || {
                         echo -e "${RED}应用补丁失败: $(basename "$repo_patch_file")${NC}"
                         # 尝试使用git am --reject
                         echo -e "${YELLOW}尝试使用git am --reject...${NC}"

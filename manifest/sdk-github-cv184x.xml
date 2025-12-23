@@ -21,5 +21,4 @@
     <project name="cvi_alios_open" path="cvi_alios"/>
     <project name="libsophon"/>
     <project name="osal"/>
-    <project name="rt-thread"/>
 </manifest>
