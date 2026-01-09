@@ -312,8 +312,15 @@ function git_clone {
             popd
         fi
 
-        # 将 commit-msg 文件添加到 .git/hooks/ 目录下
-        # cp $SCRIPT_DIR/commit-msg $PWD/$path/.git/hooks/commit-msg
+        # 将 hooks 目录下的所有文件拷贝到 .git/hooks/ 目录下
+        hooks_src_dir="$SCRIPT_DIR/hooks"
+        if [[ -d "$hooks_src_dir" ]]; then
+            for hook_file in "$hooks_src_dir"/*; do
+                if [[ -f "$hook_file" ]]; then
+                    cp "$hook_file" "$PWD/$path/.git/hooks/"
+                fi
+            done
+        fi
 
         # 替换 .git/config 中的 10.80.65.11 为 gerrit-ai.sophgo.vip
         sed -i 's/10.80.65.11/gerrit-ai.sophgo.vip/g' $PWD/$path/.git/config

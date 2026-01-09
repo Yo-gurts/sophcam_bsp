@@ -10,37 +10,41 @@
 		io-channels = <&saradc0 0>; // ADC1
 		io-channel-names = "buttons";
 		keyup-threshold-microvolt = <4095000>; // raw value
-		poll-interval = <50>; // ms
-		debounce-steps = <2>; // 2次采样值相同才认为按键状态改变
+		poll-interval = <20>; // ms
 
 		button-ai {
 			label = "AI";
 			linux,code = <KEY_PLAY>;
 			press-threshold-microvolt = <3780000>;
+			debounce-steps = <2>; // 2次采样值相同才认为按键状态改变
 		};
 
 		button-vol-down {
 			label = "Volume Down";
 			linux,code = <KEY_VOLUMEDOWN>;
 			press-threshold-microvolt = <2829000>;
+			debounce-steps = <2>;
 		};
 
 		button-vol-up {
 			label = "Volume Up";
 			linux,code = <KEY_VOLUMEUP>;
 			press-threshold-microvolt = <1890000>;
+			debounce-steps = <2>;
 		};
 
 		button-cam-focus {
 			label = "Camera Focus";
 			linux,code = <KEY_CAMERA_FOCUS>;
 			press-threshold-microvolt = <930000>;
+			debounce-steps = <10>;
 		};
 
 		button-cam-cap {
 			label = "Camera Capture";
 			linux,code = <KEY_CAMERA>;
 			press-threshold-microvolt = <0>;
+			debounce-steps = <2>;
 		};
 	};
 

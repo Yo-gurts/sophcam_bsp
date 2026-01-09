@@ -4,6 +4,23 @@
 - Toolchain: musl_arm32
 - Board: sm3_81
 
+## 配置文件
+
+`repo_config` 中定义了bsp、app使用的xml配置文件，以及各个仓库对应的git版本文件。没有应用的版本可以选择移除 app 部分。
+
+```json
+{
+    "bsp": {
+        "xml": "manifest/sophcam_bsp_golden.xml",
+        "txt": "manifest/git_version_cv184x_2025-12-19.txt"
+    },
+    "app": {
+        "xml": "manifest/sophcam_app.xml",
+        "txt": "manifest/git_version_sophcam_2025-12-30.txt"
+    }
+}
+```
+
 ## 代码拉取
 
 - ‼️不要尝试更改相对路径，按照步骤来！
@@ -16,24 +33,6 @@ mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码
 git clone "ssh://${whoami}$@172.25.4.9:29418/Projects/Sophcam/sm3_81_bsp"
-
-# 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
-./sm3_81_bsp/scripts/repos.sh --gitclone ./sm3_81_bsp/manifest/sophcam_bsp_golden.xml --reproduce ./sm3_81_bsp/manifest/git_version_cv184x_2025-12-19.txt
-
-# 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
-./sm3_81_bsp/scripts/repos.sh --applypatch ./sm3_81_bsp/manifest/git_version_cv184x_2025-12-19.txt
-
-# 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
-./sm3_81_bsp/scripts/sync.sh
-
-# 检查SDK本地提交的patch
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sophcam_bsp_golden.xml lp
-
-# 在每个git仓库中执行命令
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sophcam_bsp_golden.xml git status
-# 更新SDK
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml git fetch
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml git rebase
 ```
 
 **github 代码**
@@ -43,25 +42,32 @@ mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码
 git clone -b v6.3.2-20251219 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
+```
 
+**常用命令**
+
+```bash
 # 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
-./sm3_81_bsp/scripts/repos.sh --gitclone ./sm3_81_bsp/manifest/sdk-github-cv184x.xml --reproduce ./sm3_81_bsp/manifest/git_version_github_cv184x_2025-12-19.txt
+./sm3_81_bsp/scripts/repos --gitclone --reproduce
 
 # 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
-./sm3_81_bsp/scripts/repos.sh --applypatch ./sm3_81_bsp/manifest/git_version_github_cv184x_2025-12-19.txt
+./sm3_81_bsp/scripts/repos --applypatch
 
 # 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
 ./sm3_81_bsp/scripts/sync.sh
 
 # 检查SDK本地提交和远端的差异
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml lp
+./sm3_81_bsp/scripts/repos --quiet --run lp
 
 # 在每个git仓库中执行命令
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml git status
+./sm3_81_bsp/scripts/repos --quiet --run git status
 
 # 更新SDK
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml git fetch
-./sm3_81_bsp/scripts/repos.sh --run ./sm3_81_bsp/manifest/sdk-github-cv184x.xml git rebase
+./sm3_81_bsp/scripts/repos --bsp --run git fetch
+./sm3_81_bsp/scripts/repos --bsp --run git rebase
+
+# release 代码时记录版本信息
+./sm3_81_bsp/scripts/repos --run release > sm3_81_bsp/manifest/release/release_sm3_81_20260106.txt
 ```
 
 ## SDK 编译
@@ -107,7 +113,7 @@ clean_all && build_all
 - 使用`applypatch`命令应用patch：
   ```bash
   cd SDK_CV184X
-  ./sm3_81_bsp/scripts/repos.sh --applypatch ./sm3_81_bsp/manifest/git_version_github_cv184x_2025-12-19.txt
+  ./sm3_81_bsp/scripts/repos --applypatch
   ```
   该命令会自动提取patches目录下文件的前缀，确定是哪个仓库的patch，并进行应用。如果仓库当前存在未提交的改动或者与指定的txt文件中的commit-id不匹配，会提示用户是否继续应用patch。如果用户选择继续，会先重置到指定的commit-id，然后再应用patch。
 
