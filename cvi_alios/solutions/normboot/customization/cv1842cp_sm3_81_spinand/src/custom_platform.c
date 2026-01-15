@@ -197,8 +197,9 @@ void _PWRButtonPinmux(void)
 	mmio_write_32(0x05021004, mmio_read_32(0x05021004) & 0xFFFFFEFF);
 	// DETECT PWR_BUTTON1 LEVEL
 	uint32_t key_value = mmio_read_32(0x05021050) & 0x100;
-	if(key_value) {
-		// printf("PWR_BUTTON1 is not pressed\n");
+    bool is_reboot     = (mmio_read_32(0x50260f8) & 0x3) == 0x3;
+    if(key_value && !is_reboot) {
+        // printf("PWR_BUTTON1 is not pressed\n");
 		mmio_write_32(0x050260c0, 0x1);
 		while (mmio_read_32(0x050260c0) != 0x1)
 			;
@@ -219,7 +220,7 @@ void _PWRButtonPinmux(void)
 		while (1){
 			mmio_write_32(0x05025008, 0x10001);
 		}
-	}
+    }
 }
 
 void PLATFORM_IoInit(void)
