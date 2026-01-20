@@ -395,7 +395,7 @@ def run_command_in_repos(projects: List[RepoProject], command: List[str]):
         elif command[0] == "release":
             cmd_release(str(path), project)
         else:
-            print(f"{Colors.BLUE}Executing: 'release', Current directory: {project.name} ({project.folder_name}) {Colors.NC}")
+            print(f"{Colors.BLUE}Executing: 'release', Current directory: {project.path} ({project.folder_name}) {Colors.NC}")
             run_cmd(command, cwd=str(path), check=False, capture_output=False)
 
 
@@ -471,6 +471,19 @@ def reproduce_repo(project: RepoProject, txt_file: str):
     if not path.exists():
         print(config.colored(f"错误: 未找到项目: {path}", Colors.RED))
         return
+
+    # 检查是否有已跟踪文件的未提交更改（过滤掉 untracked 文件）
+    result = run_cmd(["git", "status", "--porcelain"], cwd=str(path), check=False)
+    # 过滤掉 ?? 开头的 untracked 行，只保留有内容的非空行
+    lines = [line for line in result.stdout.strip().split('\n') if line and not line.startswith('??')]
+    has_changes = bool(lines)
+
+    if has_changes:
+        print(config.colored(f"警告: {project.name} 存在未提交的更改", Colors.YELLOW))
+        confirm = input(config.colored("执行 reproduce 将丢弃这些更改，是否继续? (y/n): ", Colors.YELLOW))
+        if confirm.lower() not in ['y', 'yes']:
+            print(f"跳过 {project.name}...")
+            return
 
     print(f"\n正在复现 {project.name} 到 {commit_id}")
     result = run_cmd(["git", "reset", "--hard", commit_id], cwd=str(path), check=False)

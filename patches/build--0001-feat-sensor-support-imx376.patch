@@ -1,0 +1,25 @@
+From 861808551e90f555806bcf5009e258a0208d4fda Mon Sep 17 00:00:00 2001
+From: "shihuai.zhang" <shihuai.zhang@sophgo.com>
+Date: Fri, 16 Jan 2026 11:25:34 +0800
+Subject: [PATCH] feat:(sensor): support imx376
+
+Change-Id: Ief2dc51097b3fa6dc3b335e88f90ca1af7f18aa7
+---
+ sensors/sensor_list.json | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sensors/sensor_list.json b/sensors/sensor_list.json
+index ff5cbba6..5de2ba7e 100644
+--- a/sensors/sensor_list.json
++++ b/sensors/sensor_list.json
+@@ -88,6 +88,7 @@
+ 		"SONY_IMX335",
+ 		"SONY_IMX347",
+ 		"SONY_IMX385",
++		"SONY_IMX376",
+ 		"SONY_IMX412",
+ 		"SONY_IMX415",
+ 		"SONY_IMX585",
+-- 
+2.25.1
+
