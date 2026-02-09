@@ -382,8 +382,9 @@ def check_uncommitted_changes(cwd: str) -> bool:
 def print_uncommitted_files(lines: List[str]):
     """打印未提交的文件列表"""
     for line in lines:
-        status = line[:2]
-        filename = line[3:]
+        parts = line.split(' ', 1)
+        status = parts[0]
+        filename = parts[1] if len(parts) > 1 else ''
         status_text = {"M": "修改", "A": "新增", "D": "删除", "R": "重命名"}.get(status.strip(), status.strip())
         print(f"  [{status_text}] {filename}")
 
