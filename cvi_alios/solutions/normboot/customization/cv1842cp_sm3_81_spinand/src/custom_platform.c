@@ -183,23 +183,31 @@ void _PanelPinmux(void)
 	printf("PWR_SEQ1 pinmux unlock\n");
 	mmio_write_32(0x05027078, 0x11);
 	PINMUX_CONFIG(PWR_SEQ1, PWR_GPIO_3); // LCD_RST
-	PINMUX_CONFIG(JTAG_CPU_TCK, XGPIOA_18); // LCD_BL
+        PINMUX_CONFIG(JTAG_CPU_TCK, XGPIOA_18); // LCD_BL
 }
 
-void _PWRButtonPinmux(void)
+// 检测是否是看门狗或reboot触发的开机
+static bool _IsRebootOrWatchdogWakeup(void)
 {
-    // PWR_BUTTON1 pinmux unlock
-    // "IOBLK_GRTC_REG_PWR_BUTTON1 0x0502_7020"
-    // "FMUX_GPIO_REG_IOCTRL_PWR_BUTTON1 0x0300_1098"
-    // printf("PWR_BUTTON1 pinmux unlock\n");
-    // PINMUX_CONFIG(PWR_BUTTON1, PWR_GPIO_8);
+    // bit26: REBOOT flag, bit27: WATCHDOG flag
+    return ((mmio_read_32(0x050260f8) >> 26) & 0x3) != 0;
+}
+
+// 检测PWR_BUTTON1是否按下
+// 返回: true-按键按下, false-按键未按下
+static bool _IsPowerButtonPressed(void)
+{
     // PWR_GPIO8 INPUT MODE
     mmio_write_32(0x05021004, mmio_read_32(0x05021004) & 0xFFFFFEFF);
     // DETECT PWR_BUTTON1 LEVEL
-    uint32_t key_value = mmio_read_32(0x05021050) & 0x100;
-    bool is_reboot = (mmio_read_32(0x50260f8) >> 26) & 0x1;
-    if (key_value && !is_reboot) {
-        // printf("PWR_BUTTON1 is not pressed\n");
+    uint32_t key_value = (mmio_read_32(0x05021050) & 0x100) >> 8;
+    return key_value != 1;
+}
+
+static void PowerKeyCheck(void)
+{
+    if (!_IsPowerButtonPressed()) {
+        // 未按下电源键，走 poweroff 流程
         mmio_write_32(0x050260c0, 0x1);
         while (mmio_read_32(0x050260c0) != 0x1)
             ;
@@ -253,24 +261,27 @@ void PLATFORM_PowerOff(void)
 
 int PLATFORM_PanelInit(void)
 {
-	u8 rst_port, rst_pin;
+    u8 rst_port, rst_pin;
 
-	_PWRButtonPinmux();
-	_PanelPinmux();
+    // 看门狗或reboot触发的开机，不检测按键，直接继续启动
+    if (!_IsRebootOrWatchdogWakeup()) {
+        PowerKeyCheck();
+    }
+    _PanelPinmux();
 #if (!defined(CONFIG_SUPPORT_VO) || (CONFIG_SUPPORT_VO))
 #if CONFIG_PANEL_ST7703
-	u8 bl_port = 0, bl_pin = 18;
+    u8 bl_port = 0, bl_pin = 18;
 
-	rst_port = 4;
-	rst_pin = 3;
-	_GPIOSetValue(rst_port, rst_pin, 1);
-	udelay(20 * 1000);
-	_GPIOSetValue(rst_port, rst_pin, 0);
-	udelay(100 * 1000);
-	_GPIOSetValue(rst_port, rst_pin, 1);
-	udelay(20 * 1000);
-	_GPIOSetValue(bl_port, bl_pin, 1);
-	printf("panel reset success\n");
+    rst_port = 4;
+    rst_pin = 3;
+    _GPIOSetValue(rst_port, rst_pin, 1);
+    udelay(20 * 1000);
+    _GPIOSetValue(rst_port, rst_pin, 0);
+    udelay(100 * 1000);
+    _GPIOSetValue(rst_port, rst_pin, 1);
+    udelay(20 * 1000);
+    _GPIOSetValue(bl_port, bl_pin, 1);
+    printf("panel reset success\n");
 #endif
 #endif
 

@@ -115,33 +115,53 @@ def print_usage():
     """打印使用信息"""
     print(f"""
 {Colors.BLUE}仓库管理脚本{Colors.NC}
+管理多个 git 仓库的克隆、状态检查、版本保存与复现。
 
-{Colors.YELLOW}用法: {sys.argv[0]} [选项]{Colors.NC}
+{Colors.YELLOW}配置文件（脚本目录/repo_config）:{Colors.NC}
+  {{
+    "bsp": {{ "xml": "../manifest/bsp.xml", "txt": "../manifest/bsp_version.txt" }},
+    "app": {{ "xml": "../manifest/app.xml", "txt": "../manifest/app_version.txt" }}
+  }}
+  路径相对于配置文件所在目录
 
-{Colors.YELLOW}选项:{Colors.NC}
-  --gitclone              克隆 BSP 和 APP 仓库（按配置）
-  --save [txt]            保存 commit_id（默认按配置，可指定文件名）
-  -r, --run <cmd...>      在每个仓库执行命令
-  --reproduce             复现仓库到指定提交（按配置 txt）
-  --applypatch            应用补丁（按配置 txt 和 patches 目录）
-  --hostslave             使用备用服务器 (10.80.65.11)
-  --normal                完整克隆（所有分支）
-  --force                 跳过目录检查
+{Colors.YELLOW}基本用法:{Colors.NC}
+  {sys.argv[0]} [选项] <命令>
+
+{Colors.YELLOW}核心命令:{Colors.NC}
+  --gitclone              克隆所有仓库（按配置文件）
+  --save [txt]            保存所有仓库当前 commit_id
+  --reproduce             复现仓库到指定 commit（按 txt 文件）
+  --check-commit          检查仓库当前 commit 是否与 txt 文件一致
+  --applypatch            应用补丁（按 patches 目录）
+  -r, --run <cmd>         在每个仓库执行命令
+
+{Colors.YELLOW}筛选选项:{Colors.NC}
+  --app                   仅操作 APP 仓库
+  --bsp                   仅操作 BSP 仓库
+
+{Colors.YELLOW}克隆选项:{Colors.NC}
+  --normal                完整克隆（所有分支，默认 shallow）
+  --hostslave             使用深圳服务器
+  --force                 跳过目录存在检查
+
+{Colors.YELLOW}输出选项:{Colors.NC}
   --no-color              禁用彩色输出
   -q, --quiet             静默模式（无差异时不输出）
-  --app                   仅操作 APP 目标
-  --bsp                   仅操作 BSP 目标
 
-{Colors.YELLOW}示例:{Colors.NC}
-  {sys.argv[0]} --save                 # 保存到配置中的 txt
-  {sys.argv[0]} --save version.txt     # 保存为 bsp_version.txt, app_version.txt
-  {sys.argv[0]} --run git status       # 所有仓库执行命令
-  {sys.argv[0]} --run st               # 查看所有仓库状态
-  {sys.argv[0]} --reproduce            # 复现到配置中的 commit
-  {sys.argv[0]} --applypatch           # 应用补丁
-  {sys.argv[0]} --app --run git status # 仅在 APP 仓库执行命令
-  {sys.argv[0]} --bsp --run st         # 仅在 BSP 仓库执行命令
-  -h, --help              显示此帮助信息
+{Colors.YELLOW}快捷命令（用于 --run）:{Colors.NC}
+  st                      查看仓库同步状态（本地/远程差异）
+  lp                      仅检查本地推送状态
+  release                 显示仓库发布信息
+
+{Colors.YELLOW}使用示例:{Colors.NC}
+  {sys.argv[0]} --gitclone --reproduce --hostslave   # 克隆并复现（深圳服务器）
+  {sys.argv[0]} --applypatch                         # 应用补丁
+  {sys.argv[0]} --run st                             # 查看同步状态
+  {sys.argv[0]} --run git status                     # 所有仓库执行 git status
+  {sys.argv[0]} --save version.txt                   # 保存为 bsp_version.txt, app_version.txt
+  {sys.argv[0]} --app --run st                       # 仅查看 APP 仓库状态
+  {sys.argv[0]} --bsp --run lp                       # 仅检查 BSP 本地推送
+  {sys.argv[0]} -h, --help                           # 显示此帮助信息
 """)
 
 
@@ -352,6 +372,22 @@ def cmd_lp(cwd: str, project: RepoProject):
     print(f"\n{Colors.BLUE}{'='*70}{Colors.NC}")
 
 
+def check_uncommitted_changes(cwd: str) -> bool:
+    """检查是否有已跟踪文件的未提交更改，返回 (是否有更改, 文件列表)"""
+    result = run_cmd(["git", "status", "--porcelain"], cwd=cwd, check=False)
+    lines = [line for line in result.stdout.strip().split('\n') if line and not line.startswith('??')]
+    return bool(lines), lines
+
+
+def print_uncommitted_files(lines: List[str]):
+    """打印未提交的文件列表"""
+    for line in lines:
+        status = line[:2]
+        filename = line[3:]
+        status_text = {"M": "修改", "A": "新增", "D": "删除", "R": "重命名"}.get(status.strip(), status.strip())
+        print(f"  [{status_text}] {filename}")
+
+
 def cmd_release(cwd: str, project: RepoProject):
     """显示仓库的发布信息"""
     print(f"{Colors.BLUE}Executing: 'release', Current directory: {project.name} ({project.folder_name}) {Colors.NC}")
@@ -472,20 +508,18 @@ def reproduce_repo(project: RepoProject, txt_file: str):
         print(config.colored(f"错误: 未找到项目: {path}", Colors.RED))
         return
 
-    # 检查是否有已跟踪文件的未提交更改（过滤掉 untracked 文件）
-    result = run_cmd(["git", "status", "--porcelain"], cwd=str(path), check=False)
-    # 过滤掉 ?? 开头的 untracked 行，只保留有内容的非空行
-    lines = [line for line in result.stdout.strip().split('\n') if line and not line.startswith('??')]
-    has_changes = bool(lines)
+    print(f"\n正在复现 {project.name} 到 {commit_id}")
 
+    # 检查是否有已跟踪文件的未提交更改
+    has_changes, lines = check_uncommitted_changes(str(path))
     if has_changes:
-        print(config.colored(f"警告: {project.name} 存在未提交的更改", Colors.YELLOW))
-        confirm = input(config.colored("执行 reproduce 将丢弃这些更改，是否继续? (y/n): ", Colors.YELLOW))
+        print(config.colored(f"警告: {project.name} 存在未提交的更改:", Colors.YELLOW))
+        print_uncommitted_files(lines)
+        confirm = input(config.colored("\n执行 reproduce 将丢弃这些更改，是否继续? (y/n): ", Colors.YELLOW))
         if confirm.lower() not in ['y', 'yes']:
             print(f"跳过 {project.name}...")
             return
 
-    print(f"\n正在复现 {project.name} 到 {commit_id}")
     result = run_cmd(["git", "reset", "--hard", commit_id], cwd=str(path), check=False)
     if result.returncode != 0:
         print(config.colored(f"重置 {project.name} 失败", Colors.RED))
@@ -534,6 +568,88 @@ def save_commit_ids(projects: List[RepoProject], txt_file: str):
     print(f"\n{Colors.GREEN}已保存 {len(lines)//3} 个仓库到 {txt_path}{Colors.NC}")
 
 
+def check_commit_id(project: RepoProject, txt_file: str):
+    """检查仓库当前 commit 是否与 txt 文件中的一致，不一致时检查 commit 是否存在于历史中"""
+    path = Path.cwd() / project.path
+
+    if not path.exists():
+        print(config.colored(f"警告: 未找到仓库: {path}", Colors.YELLOW))
+        return
+
+    if not (path / ".git").exists():
+        print(config.colored(f"警告: 非 git 仓库: {path}", Colors.YELLOW))
+        return
+
+    # 获取 txt 中记录的 commit_id
+    expected_commit = get_commit_id_from_txt(project.name, txt_file)
+    if not expected_commit:
+        expected_commit = get_commit_id_from_txt(project.folder_name, txt_file)
+
+    if not expected_commit:
+        print(config.colored(f"错误: 未找到 {project.name} 的 commit_id", Colors.RED))
+        return
+
+    # 获取当前 commit_id
+    result = run_cmd(["git", "rev-parse", "HEAD"], cwd=str(path), check=False)
+    if result.returncode != 0:
+        print(config.colored(f"错误: 无法获取 {project.name} 的当前 commit", Colors.RED))
+        return
+
+    current_commit = result.stdout.strip()
+
+    # 提取完整的 commit_id（txt 中可能只保存了部分）
+    result = run_cmd(["git", "rev-parse", "--verify", expected_commit],
+                     cwd=str(path), check=False, capture_output=True)
+    if result.returncode == 0:
+        full_expected_commit = result.stdout.strip()
+    else:
+        full_expected_commit = expected_commit
+
+    # 一致时不输出任何内容
+    if current_commit == full_expected_commit:
+        return
+
+    # 不一致时输出
+    print(f"{Colors.BLUE}Executing: 'check-commit', Current directory: {project.path} ({project.folder_name}) {Colors.NC}")
+
+    result = run_cmd(["git", "merge-base", "--is-ancestor", full_expected_commit, "HEAD"],
+                     cwd=str(path), check=False, capture_output=True)
+    is_ancestor = result.returncode == 0
+
+    result = run_cmd(["git", "merge-base", "--is-ancestor", "HEAD", full_expected_commit],
+                     cwd=str(path), check=False, capture_output=True)
+    is_descendant = result.returncode == 0
+
+    if is_ancestor:
+        print(config.colored(f"存在未同步到远程仓库的提交 ({FAIL_STATUS}):", Colors.YELLOW))
+        cmd = ["git", "log", f"{full_expected_commit}..HEAD", "--color",
+               "--pretty=format:%h - %s (%cr) <%an>"]
+        result = run_cmd(cmd, cwd=str(path), check=False)
+        if result.stdout:
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+    elif is_descendant:
+        print(config.colored(f"远程仓库存在未拉取的提交 ({FAIL_STATUS}):", Colors.RED))
+        cmd = ["git", "log", f"HEAD..{full_expected_commit}", "--color",
+               "--pretty=format:%h - %s (%cr) <%an>"]
+        result = run_cmd(cmd, cwd=str(path), check=False)
+        if result.stdout:
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+    else:
+        # commit 不在当前分支的历史中，可能在不同分支
+        result = run_cmd(["git", "branch", "-a", "--contains", full_expected_commit],
+                         cwd=str(path), check=False, capture_output=True)
+        branches = result.stdout.strip() if result.stdout.strip() else None
+
+        if branches:
+            print(config.colored(f"commit 不在不同分支 ({FAIL_STATUS}):", Colors.YELLOW))
+            for branch in branches.split("\n"):
+                print(f"  {branch.strip()}")
+        else:
+            print(config.colored(f"commit 不存在 ({FAIL_STATUS}):", Colors.RED))
+
+    print(f"\n{Colors.BLUE}{'='*70}{Colors.NC}")
+
+
 def apply_patches(projects: List[RepoProject], patches_dir: str, txt_file: str, applied_repos: Optional[set] = None):
     """向仓库应用补丁（按 projects 遍历）"""
     patches_path = Path(patches_dir)
@@ -573,8 +689,19 @@ def apply_patches(projects: List[RepoProject], patches_dir: str, txt_file: str, 
         if not expected_commit:
             continue
 
-        # 应用补丁
-        patch_files = sorted(patches_path.glob(f"{repo_name}--*.patch"))
+        # 应用补丁 - 格式: 序号-repo--*.patch (如 0001-sophcam--fix-bug.patch)
+        patch_files = list(patches_path.glob(f"[0-9][0-9][0-9][0-9]-{repo_name}--*.patch"))
+
+        # 按数字序号排序，序号相同按文件名排序
+        def sort_key(p: Path) -> Tuple[int, str]:
+            """提取文件名中的序号用于排序"""
+            name = p.stem  # 去掉 .patch 后缀
+            match = re.match(r'^(\d{4})', name)
+            if match:
+                return (int(match.group(1)), name)
+            return (9999, name)
+
+        patch_files = sorted(patch_files, key=sort_key)
         if not patch_files:
             continue
 
@@ -582,16 +709,16 @@ def apply_patches(projects: List[RepoProject], patches_dir: str, txt_file: str, 
         result = run_cmd(["git", "rev-parse", "HEAD"], cwd=str(path))
         current_commit = result.stdout.strip()
 
-        # 检查未提交的更改
-        result = run_cmd(["git", "status", "--porcelain"], cwd=str(path))
-        has_changes = bool(result.stdout.strip())
+        # 检查是否有已跟踪文件的未提交更改
+        has_changes, lines = check_uncommitted_changes(str(path))
 
         needs_reset = False
 
         print(f"{Colors.BLUE}\n================ 正在为 {repo_name} 应用补丁{Colors.NC}")
 
         if has_changes:
-            print(config.colored("警告: 仓库有未提交的更改", Colors.YELLOW))
+            print(config.colored("警告: 仓库有未提交的更改:", Colors.YELLOW))
+            print_uncommitted_files(lines)
             needs_reset = True
 
         if current_commit != expected_commit:
@@ -639,6 +766,7 @@ def main():
     parser.add_argument("-r", "--run", nargs=argparse.REMAINDER, metavar="CMD...")
     parser.add_argument("--reproduce", action="store_true")
     parser.add_argument("--applypatch", action="store_true")
+    parser.add_argument("--check-commit", action="store_true")
     parser.add_argument("--save", nargs="?", const="", metavar="TXT")
     parser.add_argument("--hostslave", action="store_true")
     parser.add_argument("--normal", action="store_true")
@@ -659,7 +787,8 @@ def main():
         config.use_colors = False
 
     # 设置脚本目录
-    config.script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.abspath(__file__)
+    config.script_dir = os.path.dirname(script_path)
 
     # 检查 .git 目录
     if not args.force and not args.reproduce and not args.applypatch and not args.save and not args.run:
@@ -758,6 +887,23 @@ def main():
         for name, cfg in get_filtered_targets():
             process_target(name, cfg, "reproduce")
 
+    if args.check_commit:
+        for name, cfg in get_filtered_targets():
+            xml_file = cfg.get("xml")
+            txt_file = cfg.get("txt", "")
+            if not xml_file or not txt_file:
+                continue
+
+            print(f"\n{Colors.BLUE}=== {name} 检查 commit ==={Colors.NC}")
+
+            # 解析 XML 获取 projects
+            remote_fetch, remote_name, default_revision = parse_remote_from_xml(xml_file)
+            remote_url = modify_remote_url(remote_fetch, args.hostslave, username)
+            projects = parse_projects_from_xml(xml_file, remote_url, default_revision)
+
+            for project in projects:
+                check_commit_id(project, txt_file)
+
     if args.applypatch:
         # 使用 set 记录已处理的仓库，避免 BSP/APP 重复处理相同仓库
         applied_repos = set()
@@ -794,7 +940,6 @@ def main():
         for name, cfg in get_filtered_targets():
             xml_file = cfg.get("xml")
             if not xml_file or not os.path.exists(xml_file):
-                print(f"警告: {name} XML 文件不存在: {xml_file}")
                 continue
 
             # 解析远程配置
@@ -812,31 +957,10 @@ def main():
 
 
 def find_config_file() -> Optional[Path]:
-    """自动查找配置文件"""
-    # 配置文件名列表
-    config_names = ["repo_config", ".repos_config", "repos.config.json", "repos_config.json"]
-
-    # 1. 检查脚本上一级目录（优先）
-    script_dir = Path(__file__).parent.parent
-    for name in config_names:
-        path = script_dir / name
-        if path.exists():
-            return path
-
-    # 2. 检查当前目录
-    for name in config_names:
-        path = Path.cwd() / name
-        if path.exists():
-            return path
-
-    # 3. 检查家目录
-    home_dir = Path.home()
-    for name in config_names:
-        path = home_dir / name
-        if path.exists():
-            return path
-
-    return None
+    """获取配置文件路径（脚本目录）"""
+    script_path = os.path.abspath(__file__)
+    script_dir = os.path.dirname(script_path)
+    return Path(script_dir) / "repo_config"
 
 
 def load_config(config_file: Optional[str] = None) -> Tuple[Dict[str, Any], Optional[Path]]:
@@ -856,9 +980,7 @@ def load_config(config_file: Optional[str] = None) -> Tuple[Dict[str, Any], Opti
         import json
         with open(config_path, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
-            # 只在显式指定或找到时打印
-            if config_file or find_config_file() == config_path:
-                print(f"{Colors.GREEN}✓ 已加载配置文件: {config_path}{Colors.NC}")
+            print(f"{Colors.GREEN}✓ 已加载配置文件: {config_path}{Colors.NC}")
             return config_data, config_path.parent
     except json.JSONDecodeError as e:
         print(config.colored(f"错误: 配置文件格式错误: {e}", Colors.RED))

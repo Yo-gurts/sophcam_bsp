@@ -97,18 +97,15 @@ clean_all && build_all
   ./scripts/rename.sh sm3_81 projectname
   ./scripts/rename.sh SM3_81 PROJECTNAME
   ```
-- 如果需要修改SDK本身，建议修改后，将patch保存到`sm3_81_bsp/patches`目录下，并以`xxx--0001-xxx.patch`格式命名，其中`xxx`为文件夹的名称，以`--`分隔。这样其他人拉代码之后，可以方便的应用patch。以linux_5.10为例：
+- 如果需要修改SDK本身，建议修改后，将patch保存到`sm3_81_bsp/patches`目录下，并以`0001-xxx--commit-message.patch`格式命名，其中`xxx`为文件夹的名称，以`--`分隔。这样其他人拉代码之后，可以方便的应用patch。以linux_5.10为例：
   ```bash
   cd linux_5.10
   # 假设有两笔patch
   git format-patch -o ../sm3_81_bsp/patches/ -2
   # 重命名patch
   cd ../sm3_81_bsp/patches/
-  mv 0001-xxx.patch linux_5.10--0001-xxx.patch
-  mv 0002-xxx.patch linux_5.10--0002-xxx.patch
-
-  # 批量重命名
-  for f in 00*.patch; do mv "$f" "xxx--$f"; done
+  mv 0001-xxx.patch 0001-linux_5.10--xxx.patch
+  mv 0002-xxx.patch 0002-linux_5.10--xxx.patch
   ```
 - 使用`applypatch`命令应用patch：
   ```bash
@@ -116,6 +113,45 @@ clean_all && build_all
   ./sm3_81_bsp/scripts/repos --applypatch
   ```
   该命令会自动提取patches目录下文件的前缀，确定是哪个仓库的patch，并进行应用。如果仓库当前存在未提交的改动或者与指定的txt文件中的commit-id不匹配，会提示用户是否继续应用patch。如果用户选择继续，会先重置到指定的commit-id，然后再应用patch。
+
+## 项目规范
+
+- 仓库清单与版本快照:
+  - 从 `https://github.com/sophgo/sophpi/tree/sg200x-evb/scripts` 获取对应SDK的内部、外部版本快照，以及外部的仓库清单。
+  - 内部的仓库清单从 `cvi_manifest` 仓库获取。
+
+- **补丁命名规范**：<序号>-<repo_name>--<功能描述>.patch
+
+  - `repo_name`：使用实际的文件夹名，而不是 gerrit 上面的仓库名。
+
+    ```bash
+    # xml
+    <project name="AICamera/test" path="sophcam" remote_url="ssh://172.25.4.9:29418/" soft_link="no"/>
+    # patch
+    0006-sophcam--feat-auto-detect-sensor-i2c-addr.patch
+    ```
+  - **序号**: 4位数字，从 0001 开始, 序号全局递增，方便确定打补丁的先后顺序。
+  - 解同一个bug、功能的patch，涉及几个仓库时，使用相同的序号。
+    ```bash
+    0015-cvi_alios--refactor-af-refine-af-debug-log.patch
+    0015-isp--refactor-af-refine-af-debug-log.patch
+    ```
+  - **注意**：<序号>-<repo_name>--<功能描述>，序号和 repo_name 直接用`-`分隔，repo_name和功能描述用 `--` 分隔，因为部分仓库名中带 `-` ，防止脚本处理出错。
+
+- **补丁制作方法**：先提交代码，再用 `format-patch` 生成补丁，再重命名补丁并放到对应的项目文件夹。
+
+    ```bash
+    cd <repo_dir>
+    # 方法1: 从 commit 生成补丁，-o 指定生成patch的位置
+    git format-patch -1 <commit_id> -o ../../patches/
+    # 方法2: 最近几笔提交的代码生成补丁
+    git format-patch -o ../../patches -3 # 最近3笔patch
+    ```
+
+- **补丁应用**：使用 `repos --applypatch` 会自动将所有 `patches` 目录下的补丁打到对应的仓库。
+  - 会检查 `commit_id` 是否匹配版本快照，不一致会有提示，用户确认后会回退到指定 `commit_id` 进行打patch。
+
+- **代码提交**：由于一个仓库记录所有不同的项目，建议提交patch时，提交信息前面带上项目编号。如：`dc309-feat: xxx`。
 
 ## release 注意事项
 
