@@ -1,0 +1,57 @@
+From 67830da156406ca04411d16ff936cacf6ea29c38 Mon Sep 17 00:00:00 2001
+From: "song.yu" <song.yu@sophgo.com>
+Date: Tue, 17 Mar 2026 14:11:02 +0800
+Subject: [PATCH] feat: set rtc wakeup source
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+SM3-81板子使用RTC唤醒源为 PWR_BUTTON1, PWR_WAKEUP0
+
+Change-Id: I2fa2d48cdcbdf866daa9831a7510d8d3308a6bae
+---
+ plat/cvitek/cv184x/common/bl2_load.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/plat/cvitek/cv184x/common/bl2_load.c b/plat/cvitek/cv184x/common/bl2_load.c
+index 6742046..b0b0f09 100644
+--- a/plat/cvitek/cv184x/common/bl2_load.c
++++ b/plat/cvitek/cv184x/common/bl2_load.c
+@@ -924,6 +924,26 @@ void fip_src_check(void)
+ 	}
+ }
+ 
++/* RTC 唤醒源设定
++ * AI相机项目中，RTC唤醒源为 PWR_BUTTON1, PWR_WAKEUP0
++ */
++void rtc_wakeup_config(void)
++{
++	/* 唤醒源设定 */
++	mmio_write_32(0x03001098, 0); // 切pinmux为 PWR_BUTTON1
++	mmio_write_32(0x03001090, 0); // 切pinmux为 PWR_WAKEUP0
++
++	mmio_write_32(0x05027084, 0); // 锁定pinmux为 PWR_BUTTON1
++	mmio_write_32(0x0502708c, 0); // 锁定pinmux为 PWR_WAKEUP0，防止poweroff时被重置
++
++	mmio_write_32(0x050250ac, 0x2); // 设定 poweroff 时 rtc 不复位
++	mmio_write_32(0x050260d0, 0x3); // 不自动开机
++	mmio_write_32(0x050260bc, 0x1100); // RTC_EN_PWR_WAKEUP 设定唤醒源为 PWR_BUTTON1、PWR_WAKEUP0
++	// 设定触发模式，PWR_BUTTON1 为低电平触发，
++	// PWR_WAKEUP0 为上升沿触发（默认是高电平触发，会导致poweroff下去，立马又开机）
++	mmio_write_32(0x0502606c, 0x16);
++}
++
+ int load_rest(void)
+ {
+ 	int retry = 0;
+@@ -999,6 +1019,7 @@ retry_from_flash:
+ 	console_flush();
+ 
+ 	// switch_rtc_mode_2nd_stage();
++	rtc_wakeup_config();
+ 
+ 	NOTICE("M/%lx/N/%lx/", monitor_entry, loader_2nd_entry);
+ 	if (monitor_entry) {
+-- 
+2.25.1
+

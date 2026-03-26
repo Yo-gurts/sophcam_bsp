@@ -25,6 +25,8 @@ case "$1" in
                 . $SYSTEMPATH/auto.sh &
         fi
 
+	echo "/mnt/data/core-%e-%p-%t" > /proc/sys/kernel/core_pattern && echo 1 > /proc/sys/kernel/core_uses_pid && ulimit -c unlimited
+
         # reset sensor(B26)
         echo 474 > /sys/class/gpio/export
         echo out > /sys/class/gpio/gpio474/direction
@@ -43,6 +45,7 @@ case "$1" in
         # run wpa_supplicant after app start
         wpa_supplicant -D nl80211 -i wlan0 -c /etc/wpa_supplicant.conf -B
         ifconfig wlan0 down
+        wifi-daemon -l info &
 
         ;;
   stop)

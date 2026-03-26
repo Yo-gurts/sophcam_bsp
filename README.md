@@ -31,8 +31,8 @@
 ```bash
 mkdir SDK_CV184X && cd SDK_CV184X
 
-# 拉取项目代码
-git clone "ssh://${whoami}$@172.25.4.9:29418/Projects/Sophcam/sm3_81_bsp"
+# 拉取项目代码 project-patches 仓库
+ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.2-20260211 sm3_81_bsp
 ```
 
 **github 代码**
@@ -41,14 +41,14 @@ git clone "ssh://${whoami}$@172.25.4.9:29418/Projects/Sophcam/sm3_81_bsp"
 mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码
-git clone -b v6.3.2-20251219 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
+git clone -b v6.3.2-20260211 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
 ```
 
 **常用命令**
 
 ```bash
 # 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
-./sm3_81_bsp/scripts/repos --gitclone --reproduce
+./sm3_81_bsp/scripts/repos --gitclone --reproduce --hostslave
 
 # 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
 ./sm3_81_bsp/scripts/repos --applypatch
