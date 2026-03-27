@@ -13,10 +13,6 @@
     "bsp": {
         "xml": "manifest/sophcam_bsp_golden.xml",
         "txt": "manifest/git_version_cv184x_2025-12-19.txt"
-    },
-    "app": {
-        "xml": "manifest/sophcam_app.xml",
-        "txt": "manifest/git_version_sophcam_2025-12-30.txt"
     }
 }
 ```
@@ -32,7 +28,7 @@
 mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码 project-patches 仓库
-ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.2-20260211 sm3_81_bsp
+ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.2-20260323 sm3_81_bsp
 ```
 
 **github 代码**
@@ -41,7 +37,7 @@ ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.2-20260211 sm3_81_bsp
 mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码
-git clone -b v6.3.2-20260211 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
+git clone -b v6.3.3-20260324 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
 ```
 
 **常用命令**
@@ -56,8 +52,8 @@ git clone -b v6.3.2-20260211 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
 # 同步板卡配置到 SDK （注意这个脚本的运行位置需要固定）
 ./sm3_81_bsp/scripts/sync.sh
 
-# 检查SDK本地提交和远端的差异
-./sm3_81_bsp/scripts/repos --quiet --run lp
+# 检查环境是否对齐
+./sm3_81_bsp/scripts/repos --check-env
 
 # 在每个git仓库中执行命令
 ./sm3_81_bsp/scripts/repos --quiet --run git status
