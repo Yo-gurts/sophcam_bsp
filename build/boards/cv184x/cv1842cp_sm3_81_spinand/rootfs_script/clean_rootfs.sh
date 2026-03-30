@@ -12,6 +12,18 @@ rm -rf $SYSTEM_DIR/etc/init.d/S20urandom
 rm -rf $SYSTEM_DIR/etc/init.d/S20network
 # rm -rf $SYSTEM_DIR/etc/init.d/S23ntp
 
+# 移除来自 libsophon/install/xxx 的二进制文件以及静态库
+rm -rf $SYSTEM_DIR/system/bin/*
+rm -rf $SYSTEM_DIR/system/lib/libbmlib.a
+rm -rf $SYSTEM_DIR/system/lib/libbmodel.a
+rm -rf $SYSTEM_DIR/system/lib/libbmrt.a
+
+# 移除多余的ko
+rm -rf $SYSTEM_DIR/system/ko/8188fu.ko
+rm -rf $SYSTEM_DIR/system/ko/3rd/gt9xx.ko
+rm -rf $SYSTEM_DIR/system/ko/3rd/ts_gslX680.ko
+rm -rf $SYSTEM_DIR/usr/sbin/hostapd
+
 # rm -rf $SYSTEM_DIR/bin/ntpd
 rm -rf $SYSTEM_DIR/mnt/cfg/secure.img
 
