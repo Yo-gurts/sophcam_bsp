@@ -4,8 +4,10 @@
 #include "cv184x_asic_spinand.dtsi"
 #include "cv184x_default_memmap.dtsi"
 
+
 / {
 	adc-key2 {
+		status = "okay";
 		compatible = "adc-keys";
 		io-channels = <&saradc0 0>; // ADC1
 		io-channel-names = "buttons";
@@ -96,6 +98,33 @@
 			248 249 250 251 252 253 254 255 >;
 		default-brightness-level = <200>;
 		post-pwm-on-delay-ms = <10>;
+	};
+
+	battery_cell: battery {
+		compatible = "simple-battery";
+		voltage-min-design-microvolt = <3300000>;
+		voltage-max-design-microvolt = <4200000>;
+		charge-full-design-microamp-hours = <2000000>;
+		ocv-capacity-celsius = <25>;
+		ocv-capacity-table-0 = <4200000 100>, <4100000 90>,
+				       <3980000 75>, <3860000 55>,
+				       <3750000 35>, <3650000 20>,
+				       <3550000 10>, <3300000 0>;
+	};
+
+	adc_battery: battery-adc {
+		compatible = "cvitek,adc-simple-battery";
+		io-channels = <&saradc0 13>;
+		io-channel-names = "battery";
+		monitored-battery = <&battery_cell>;
+		charge-status-gpios = <&porte 6 GPIO_ACTIVE_HIGH>;
+		poll-interval-ms = <3000>;
+		voltage-scale = <1000>;
+		voltage-filter-alpha-permil = <250>;
+		capacity-step-up-percent = <2>;
+		capacity-step-down-percent = <1>;
+		transient-drop-microvolt = <120000>;
+		transient-hold-ms = <3000>;
 	};
 
 	/delete-node/ ethernet@4070000;

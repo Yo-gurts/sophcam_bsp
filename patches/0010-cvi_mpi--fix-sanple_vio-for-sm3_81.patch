@@ -1,0 +1,67 @@
+From d53fe845e1b752d050a58bd71f730cff8066f5e0 Mon Sep 17 00:00:00 2001
+From: "xiu.yang" <xiu.yang@sophgo.com>
+Date: Tue, 2 Dec 2025 10:18:45 +0800
+Subject: [PATCH] fix: sanple_vio for sm3_81
+
+Change-Id: I1cdf45bd32e54cc7f3e2ef69b5df3cf294257c87
+---
+ sample_app/common/sample_common_vi.c |  2 +-
+ sample_app/vio/sample_vio.c          | 14 +++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/sample_app/common/sample_common_vi.c b/sample_app/common/sample_common_vi.c
+index 999b840..46e2f4c 100644
+--- a/sample_app/common/sample_common_vi.c
++++ b/sample_app/common/sample_common_vi.c
+@@ -249,7 +249,7 @@ CVI_S32 SAMPLE_COMM_VI_INI_INIT(SAMPLE_VI_CONFIG_S *pstViConfig, SNS_INI_CFG_S *
+ 	}
+ 
+ 	if (pstVbConfig->u32MaxPoolCnt == 1) {
+-		pstVbConfig->astCommPool[0].u32BlkCnt += 2;
++		pstVbConfig->astCommPool[0].u32BlkCnt += 1;
+ 	}
+ 
+ 	return s32Ret;
+diff --git a/sample_app/vio/sample_vio.c b/sample_app/vio/sample_vio.c
+index eae4c24..bb3ed92 100644
+--- a/sample_app/vio/sample_vio.c
++++ b/sample_app/vio/sample_vio.c
+@@ -287,11 +287,11 @@ CVI_S32 SAMPLE_VIO_VPSS_INIT(SAMPLE_VI_CONFIG_S *pstViConfig,
+ 
+ 	if (pstRotCfg->rotation_vo == ROTATION_90 || pstRotCfg->rotation_vo == ROTATION_270 ||
+ 		pstRotCfg->rotation_vpss == ROTATION_90 || pstRotCfg->rotation_vpss == ROTATION_270) {
+-		astVpssChnAttr[VpssChn].u32Width		    = 1280;
+-		astVpssChnAttr[VpssChn].u32Height		    = 720;
++		astVpssChnAttr[VpssChn].u32Width		    = 480;
++		astVpssChnAttr[VpssChn].u32Height		    = 640;
+ 	} else {
+-		astVpssChnAttr[VpssChn].u32Width		    = 720;
+-		astVpssChnAttr[VpssChn].u32Height		    = 1280;
++		astVpssChnAttr[VpssChn].u32Width		    = 640;
++		astVpssChnAttr[VpssChn].u32Height		    = 480;
+ 	}
+ 	astVpssChnAttr[VpssChn].enVideoFormat		    = VIDEO_FORMAT_LINEAR;
+ 	astVpssChnAttr[VpssChn].enPixelFormat		    = PIXEL_FORMAT_NV21;
+@@ -367,8 +367,8 @@ CVI_S32 SAMPLE_VIO_VO_INIT(SAMPLE_VO_CONFIG_S *stVoConfig, VO_DEV VoDev)
+ 
+ 	stDefDispRect.s32X = 0;
+ 	stDefDispRect.s32Y = 0;
+-	stDefDispRect.u32Width = 720;
+-	stDefDispRect.u32Height = 1280;
++	stDefDispRect.u32Width = 640;
++	stDefDispRect.u32Height = 480;
+ 	stDefImageSize.u32Width = stDefDispRect.u32Width;
+ 	stDefImageSize.u32Height = stDefDispRect.u32Height;
+ 	s32Ret = SAMPLE_COMM_VO_GetDefConfig(stVoConfig);
+@@ -379,7 +379,7 @@ CVI_S32 SAMPLE_VIO_VO_INIT(SAMPLE_VO_CONFIG_S *stVoConfig, VO_DEV VoDev)
+ 
+ 	stVoConfig->VoDev	 = VoDev;
+ 	stVoConfig->stVoPubAttr.enIntfType = VO_INTF_MIPI;
+-	stVoConfig->stVoPubAttr.enIntfSync = VO_OUTPUT_720x1280_60;
++	stVoConfig->stVoPubAttr.enIntfSync = VO_OUTPUT_640x480_60;
+ 	stVoConfig->stDispRect	 = stDefDispRect;
+ 	stVoConfig->stImageSize	 = stDefImageSize;
+ 	stVoConfig->enPixFormat	 = PIXEL_FORMAT_NV21;
+-- 
+2.25.1
+

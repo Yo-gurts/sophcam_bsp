@@ -28,7 +28,7 @@
 mkdir SDK_CV184X && cd SDK_CV184X
 
 # 拉取项目代码 project-patches 仓库
-ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.2-20260323 sm3_81_bsp
+ln -s /data/xxx/project-patches/turnkey/sm3_81/v6.3.3-20260324 sm3_81_bsp
 ```
 
 **github 代码**
