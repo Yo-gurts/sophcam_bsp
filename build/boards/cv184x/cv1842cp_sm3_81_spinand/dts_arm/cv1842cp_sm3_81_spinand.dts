@@ -17,35 +17,35 @@
 		button-ai {
 			label = "AI";
 			linux,code = <KEY_PLAY>;
-			press-threshold-microvolt = <3780000>;
+			press-threshold-microvolt = <3276000>;
 			debounce-steps = <2>; // 2次采样值相同才认为按键状态改变
 		};
 
 		button-vol-down {
 			label = "Volume Down";
 			linux,code = <KEY_VOLUMEDOWN>;
-			press-threshold-microvolt = <2829000>;
+			press-threshold-microvolt = <2457000>;
 			debounce-steps = <2>;
 		};
 
 		button-vol-up {
 			label = "Volume Up";
 			linux,code = <KEY_VOLUMEUP>;
-			press-threshold-microvolt = <1890000>;
+			press-threshold-microvolt = <1638000>;
 			debounce-steps = <2>;
 		};
 
 		button-cam-focus {
 			label = "Camera Focus";
 			linux,code = <KEY_CAMERA_FOCUS>;
-			press-threshold-microvolt = <930000>;
+			press-threshold-microvolt = <819000>;
 			debounce-steps = <10>;
 		};
 
 		button-cam-cap {
 			label = "Camera Capture";
 			linux,code = <KEY_CAMERA>;
-			press-threshold-microvolt = <0>;
+			press-threshold-microvolt = <00>;
 			debounce-steps = <2>;
 		};
 	};
