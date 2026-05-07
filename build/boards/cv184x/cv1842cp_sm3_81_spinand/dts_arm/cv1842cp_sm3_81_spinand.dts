@@ -119,7 +119,7 @@
 		monitored-battery = <&battery_cell>;
 		charge-status-gpios = <&porte 6 GPIO_ACTIVE_HIGH>;
 		poll-interval-ms = <3000>;
-		voltage-scale = <1000>;
+		voltage-scale = <1025>;
 		voltage-filter-alpha-permil = <250>;
 		capacity-step-up-percent = <2>;
 		capacity-step-down-percent = <1>;
@@ -188,4 +188,14 @@
 
 &wifi_pin{
 	poweron-gpio = <&porta 19 GPIO_ACTIVE_HIGH>;
+};
+
+// SD 烧录时显示logo使用
+&{/vo}{
+	reset-gpio = <&porte 3 GPIO_ACTIVE_LOW>; // 屏幕reset
+	pwm-gpio = <&porta 18 GPIO_ACTIVE_HIGH>; // 背光控制，保持兼容，名字用pwm，但实际是GPIO控制
+	/* FMUX_GPIO_REG function_sel */
+	backlight-pinmux = <0x03001068 0x3>;	// JTAG_CPU_TCK/PWM[6]/XGPIOA[18]
+	/delete-property/ power-ct-gpio; // 无电源控制，删除该属性
+	uboot-rotation = <0>; // 配置旋转：0， 90，180，270
 };

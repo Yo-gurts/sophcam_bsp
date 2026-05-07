@@ -1,0 +1,450 @@
+From 150422a475d51656972af331d9b0154a8383cf6a Mon Sep 17 00:00:00 2001
+From: "guoling.wang" <guoling.wang@sophgo.com>
+Date: Thu, 19 Mar 2026 18:25:45 +0800
+Subject: [PATCH] [fix](vo):Adapt the I80 panel on alios
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[description]:NA
+[root cause]:NA
+[JIRA ID]:CV184XSDK-1121
+[chip project]:CV184X
+[side effects]:NA
+[Affected *.ko/*.so/*.a] :NA
+
+Change-Id: I9ec8c6e9766a769b5167e2cf09188e33c1df6e6d
+Reviewed-on: https://gerrit-ai.sophgo.vip:8443/160170
+Reviewed-by: 松 余 <song.yu@sophgo.com>
+Reviewed-by: 辉 金 <hui.jin@sophgo.com>
+Reviewed-on: https://gerrit-ai.sophgo.vip:8443/160979
+Reviewed-by: 亮 王 <wangliang.wang@sophgo.com>
+---
+ components/cvi_mmf_sdk/cvi_panel/cvi_panels.h | 140 ++++++++++++++++++
+ components/cvi_mmf_sdk/cvi_panel/dsi_panels.h |  93 ------------
+ .../cvi_mmf_sdk/cvi_panel/hw_mcu_st7789v3.h   | 110 ++++++++++++++
+ .../cvi_platform/media/src/media_video.c      |  24 ++-
+ 4 files changed, 272 insertions(+), 95 deletions(-)
+ create mode 100644 components/cvi_mmf_sdk/cvi_panel/cvi_panels.h
+ delete mode 100644 components/cvi_mmf_sdk/cvi_panel/dsi_panels.h
+ create mode 100644 components/cvi_mmf_sdk/cvi_panel/hw_mcu_st7789v3.h
+
+diff --git a/components/cvi_mmf_sdk/cvi_panel/cvi_panels.h b/components/cvi_mmf_sdk/cvi_panel/cvi_panels.h
+new file mode 100644
+index 00000000..7077d799
+--- /dev/null
++++ b/components/cvi_mmf_sdk/cvi_panel/cvi_panels.h
+@@ -0,0 +1,140 @@
++/*
++ * Copyright (C) Cvitek Co., Ltd. 2019-2021. All rights reserved.
++ *
++ * File Name: cvi_panels.h
++ * Description:
++ */
++
++#ifndef __CVI_PANEL_H__
++#define __CVI_PANEL_H__
++
++#include <cvi_comm_vo.h>
++
++struct panel_desc_s {
++	char *panel_name;
++	struct combo_dev_cfg_s *dev_cfg;
++	const struct hs_settle_s *hs_timing_cfg;
++	const struct dsc_instr *dsi_init_cmds;
++	int dsi_init_cmds_size;
++	const VO_PUB_ATTR_S stVoPubAttr;
++	const VO_LVDS_ATTR_S *LvdsAttr;
++	const VO_BT_ATTR_S *BtAttr;
++};
++
++
++#if CONFIG_PANEL_HX8394
++#include "dsi_hx8394_evb.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "HX8394-720x1280",
++	.dev_cfg = &dev_cfg_hx8394_720x1280,
++	.hs_timing_cfg = &hs_timing_cfg_hx8394_720x1280,
++	.dsi_init_cmds = dsi_init_cmds_hx8394_720x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_hx8394_720x1280)
++};
++#elif CONFIG_PANEL_ILI9881C
++#include "dsi_ili9881c.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ILI9881C-720x1280",
++	.dev_cfg = &dev_cfg_ili9881c_720x1280,
++	.hs_timing_cfg = &hs_timing_cfg_ili9881c_720x1280,
++	.dsi_init_cmds = dsi_init_cmds_ili9881c_720x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ili9881c_720x1280)
++};
++#elif CONFIG_PANEL_ILI9881D
++#include "dsi_ili9881d.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ILI9881D-720x1280",
++	.dev_cfg = &dev_cfg_ili9881d_720x1280,
++	.hs_timing_cfg = &hs_timing_cfg_ili9881d_720x1280,
++	.dsi_init_cmds = dsi_init_cmds_ili9881d_720x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ili9881d_720x1280)
++};
++#elif CONFIG_PANEL_JD9366AB
++#include "dsi_jd9366ab.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "JD9366AB-800x1280",
++	.dev_cfg = &dev_cfg_jd9366ab_800x1280,
++	.hs_timing_cfg = &hs_timing_cfg_jd9366ab_800x1280,
++	.dsi_init_cmds = dsi_init_cmds_jd9366ab_800x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_jd9366ab_800x1280)
++};
++#elif CONFIG_PANEL_NT35521
++#include "dsi_nt35521.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "NT35521-800x1280",
++	.dev_cfg = &dev_cfg_nt35521_800x1280,
++	.hs_timing_cfg = &hs_timing_cfg_nt35521_800x1280,
++	.dsi_init_cmds = dsi_init_cmds_nt35521_800x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_nt35521_800x1280)
++};
++#elif CONFIG_PANEL_OTA7290B
++#include "dsi_ota7290b.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "OTA7290B-320x1280",
++	.dev_cfg = &dev_cfg_ota7290b_320x1280,
++	.hs_timing_cfg = &hs_timing_cfg_ota7290b_320x1280,
++	.dsi_init_cmds = dsi_init_cmds_ota7290b_320x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ota7290b_320x1280)
++};
++#elif CONFIG_PANEL_OTA7290B_1920
++#include "dsi_ota7290b_1920.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "OTA7290B-440x1920",
++	.dev_cfg = &dev_cfg_ota7290b_440x1920,
++	.hs_timing_cfg = &hs_timing_cfg_ota7290b_440x1920,
++	.dsi_init_cmds = dsi_init_cmds_ota7290b_440x1920,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ota7290b_440x1920)
++};
++#elif CONFIG_PANEL_ICN9707
++#include "dsi_icn9707.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ICN9707-480x1920",
++	.dev_cfg = &dev_cfg_icn9707_480x1920,
++	.hs_timing_cfg = &hs_timing_cfg_icn9707_480x1920,
++	.dsi_init_cmds = dsi_init_cmds_icn9707_480x1920,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_icn9707_480x1920)
++};
++#elif CONFIG_PANEL_3AML069LP01G
++#include "dsi_3aml069lp01g.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "3AML069LP01G-600x1024",
++	.dev_cfg = &dev_cfg_3AML069LP01G_600x1024,
++	.hs_timing_cfg = &hs_timing_cfg_3AML069LP01G_600x1024,
++	.dsi_init_cmds = dsi_init_cmds_3AML069LP01G_600x1024,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_3AML069LP01G_600x1024)
++};
++#elif CONFIG_PANEL_ST7701
++#include "dsi_st7701.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ST7701-480x800",
++	.dev_cfg = &dev_cfg_st7701_480x800,
++	.hs_timing_cfg = &hs_timing_cfg_st7701_480x800,
++	.dsi_init_cmds = dsi_init_cmds_st7701_480x800,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7701_480x800)
++};
++#elif CONFIG_PANEL_HW_MCU_ST7789V3
++#include "hw_mcu_st7789v3.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "ST7789V3-240x320",
++	.stVoPubAttr = {
++        .enIntfType = VO_INTF_HW_MCU,
++        .enIntfSync = VO_OUTPUT_USER,
++        .stSyncInfo = {.bSynm = 1, .bIop = 1, .u16FrameRate = 60
++			, .u16Vact = 320, .u16Vbb = 5, .u16Vfb = 20
++			, .u16Hact = 240, .u16Hbb = 20, .u16Hfb = 10
++			, .u16Vpw = 5, .u16Hpw = 5, .bIdv = 0, .bIhs = 1, .bIvs = 1},
++		.stMcuCfg = st7789v3Cfg,
++    },
++};
++#else
++#include "dsi_hx8394_evb.h"
++static struct panel_desc_s panel_desc = {
++	.panel_name = "HX8394-720x1280",
++	.dev_cfg = &dev_cfg_hx8394_720x1280,
++	.hs_timing_cfg = &hs_timing_cfg_hx8394_720x1280,
++	.dsi_init_cmds = dsi_init_cmds_hx8394_720x1280,
++	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_hx8394_720x1280)
++};
++#endif
++
++#endif
+diff --git a/components/cvi_mmf_sdk/cvi_panel/dsi_panels.h b/components/cvi_mmf_sdk/cvi_panel/dsi_panels.h
+deleted file mode 100644
+index 06ce4ab1..00000000
+--- a/components/cvi_mmf_sdk/cvi_panel/dsi_panels.h
++++ /dev/null
+@@ -1,93 +0,0 @@
+-#ifndef _DSI_PANELS_
+-#define _DSI_PANELS_
+-
+-#include "cvi_type.h"
+-#include "cvi_mipi_tx.h"
+-#include "cvi_comm_mipi_tx.h"
+-
+-#ifdef __cplusplus
+-#if __cplusplus
+-extern "C" {
+-#endif
+-#endif /* End of #ifdef __cplusplus */
+-
+-struct panel_desc_s {
+-	char *panel_name;
+-	struct combo_dev_cfg_s *dev_cfg;
+-	const struct hs_settle_s *hs_timing_cfg;
+-	const struct dsc_instr *dsi_init_cmds;
+-	int dsi_init_cmds_size;
+-};
+-
+-#if CONFIG_PANEL_ILI9488
+-#include "dsi_ili9488.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "ILI9488-320x480",
+-	.dev_cfg = &dev_cfg_ili9488_320x480,
+-	.hs_timing_cfg = &hs_timing_cfg_ili9488_320x480,
+-	.dsi_init_cmds = dsi_init_cmds_ili9488_320x480,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ili9488_320x480)
+-};
+-#elif CONFIG_PANEL_ST7701S
+-#include "dsi_st7701.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "ST7701-480x800",
+-	.dev_cfg = &dev_cfg_st7701_480x800,
+-	.hs_timing_cfg = &hs_timing_cfg_st7701_480x800,
+-	.dsi_init_cmds = dsi_init_cmds_st7701_480x800,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7701_480x800)
+-};
+-#elif CONFIG_PANEL_ST7701_480x640
+-#include "dsi_st7701_480x640.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "ST7701-480x640",
+-	.dev_cfg = &dev_cfg_st7701_480x640,
+-	.hs_timing_cfg = &hs_timing_cfg_st7701_480x640,
+-	.dsi_init_cmds = dsi_init_cmds_st7701_480x640,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7701_480x640)
+-};
+-#elif CONFIG_PANEL_ST7703
+-#include "dsi_st7703.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "ST7703-640x480",
+-	.dev_cfg = &dev_cfg_st7703_640x480,
+-	.hs_timing_cfg = &hs_timing_cfg_st7703_640x480,
+-	.dsi_init_cmds = dsi_init_cmds_st7703_640x480,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_st7703_640x480)
+-};
+-#elif CONFIG_PANEL_HX8394
+-#include "dsi_hx8394_evb.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "HX8394-720x1280",
+-	.dev_cfg = &dev_cfg_hx8394_720x1280,
+-	.hs_timing_cfg = &hs_timing_cfg_hx8394_720x1280,
+-	.dsi_init_cmds = dsi_init_cmds_hx8394_720x1280,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_hx8394_720x1280)
+-};
+-#elif CONFIG_PANEL_OTA7290B
+-#include "dsi_ota7290b_1920.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "OTA7290B-440x1920",
+-	.dev_cfg = &dev_cfg_ota7290b_440x1920,
+-	.hs_timing_cfg = &hs_timing_cfg_ota7290b_440x1920,
+-	.dsi_init_cmds = dsi_init_cmds_ota7290b_440x1920,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_ota7290b_440x1920)
+-};
+-#else
+-#include "dsi_hx8394_evb.h"
+-static struct panel_desc_s panel_desc = {
+-	.panel_name = "HX8394-720x1280",
+-	.dev_cfg = &dev_cfg_hx8394_720x1280,
+-	.hs_timing_cfg = &hs_timing_cfg_hx8394_720x1280,
+-	.dsi_init_cmds = dsi_init_cmds_hx8394_720x1280,
+-	.dsi_init_cmds_size = ARRAY_SIZE(dsi_init_cmds_hx8394_720x1280)
+-};
+-#endif
+-
+-#ifdef __cplusplus
+-#if __cplusplus
+-}
+-#endif
+-#endif /* End of #ifdef __cplusplus */
+-
+-#endif // _DSI_PANELS_
+diff --git a/components/cvi_mmf_sdk/cvi_panel/hw_mcu_st7789v3.h b/components/cvi_mmf_sdk/cvi_panel/hw_mcu_st7789v3.h
+new file mode 100644
+index 00000000..9c50d57d
+--- /dev/null
++++ b/components/cvi_mmf_sdk/cvi_panel/hw_mcu_st7789v3.h
+@@ -0,0 +1,110 @@
++#ifndef _MCU_PARAM_ST7789V_H_
++#define _MCU_PARAM_ST7789V_H_
++
++#include <cvi_comm_vo.h>
++
++#define PANEL_COMM 0
++#define PANEL_DATA	1
++
++const VO_HW_MCU_CFG_S st7789v3Cfg = {
++	.pins = {
++		.pin_num = 11,
++		.d_pins = {
++			{VO_VIVO_D6, VO_MUX_MCU_DATA0},
++			{VO_VIVO_D5, VO_MUX_MCU_DATA1},
++			{VO_VIVO_D4, VO_MUX_MCU_DATA2},
++			{VO_VIVO_D3, VO_MUX_MCU_DATA3},
++			{VO_VIVO_D2, VO_MUX_MCU_DATA4},
++			{VO_VIVO_D1, VO_MUX_MCU_DATA5},
++			{VO_VIVO_D0, VO_MUX_MCU_DATA6},
++			{VO_VIVO_D7, VO_MUX_MCU_DATA7},
++			{VO_MIPI_TXM1, VO_MUX_MCU_RD},
++			{VO_MIPI_RXP5, VO_MUX_MCU_WR},
++			{VO_MIPI_TXP1, VO_MUX_MCU_RS},
++		}
++	},
++	.mode = VO_MCU_MODE_RGB565,
++	.instrs = {
++		.instr_num = 74,
++		.instr_cmd = {
++			{.delay = 120,  .data_type = PANEL_COMM, .data = 0x11},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x36},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x3A},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x05}, //0x101 = 16 bit/pixel, 0x110 = 18bit/pixel
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xB1},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xB2},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0C},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0C},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x33},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x33},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xB7},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x75},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xBB},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x1f},//Vcom 0x1F: 0.875, 0x31: 1.35V
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xC0},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x2C},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xC2},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x01},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xC3},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x13},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xC4},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x20},//VDV, 0x20:0v
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xC6},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0F},//Frame Rate control 0F: 60hz
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xD0},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xA4},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xA1},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xD6},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xA1},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xE0},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xD0},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0D},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x16},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x14},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x14},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x2F},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x38},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x54},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x48},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0A},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x1C},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x19},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x1A},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x1D},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0xE1},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xD0},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x04},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x0C},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x08},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x09},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x23},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x39},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x54},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x48},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x30},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x14},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x14},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x19},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x1C},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x2A},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0xEF},  //240
++
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x2B},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x00},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x01},
++			{.delay = 0,   .data_type = PANEL_DATA,	 .data = 0x40},  //320
++
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x29},
++			{.delay = 0,   .data_type = PANEL_COMM,	 .data = 0x2C},
++		}
++	},
++};
++
++#endif // _MCU_PARAM_ST7789V_H_
+diff --git a/components/cvi_platform/media/src/media_video.c b/components/cvi_platform/media/src/media_video.c
+index 2c730ee6..6c07e363 100644
+--- a/components/cvi_platform/media/src/media_video.c
++++ b/components/cvi_platform/media/src/media_video.c
+@@ -24,7 +24,7 @@
+ #include "cvi_sns_ctrl.h"
+ #include "cvi_mipi_tx.h"
+ #if (!defined(CONFIG_SUPPORT_VO) || (CONFIG_SUPPORT_VO))
+-#include "dsi_panels.h"
++#include "cvi_panels.h"
+ #include "media_logo.h"
+ #endif
+ #include "cvi_gdc.h"
+@@ -962,12 +962,25 @@ static void _MEDIA_VIDEO_MIPI_TX_Init(void)
+     printf("Init for MIPI-Driver-%s\n", desc->panel_name);
+ }
+ 
++static void _MEDIA_VIDEO_HW_MCU_Init(VO_PUB_ATTR_S *pstPubAttr)
++{
++    struct panel_desc_s *desc = &panel_desc;
++
++    pstPubAttr->enIntfSync = desc->stVoPubAttr.enIntfSync;
++    pstPubAttr->enIntfType = desc->stVoPubAttr.enIntfType;
++    pstPubAttr->stSyncInfo = desc->stVoPubAttr.stSyncInfo;
++    pstPubAttr->stMcuCfg = desc->stVoPubAttr.stMcuCfg;
++
++    printf("Init for Driver-%s\n", desc->panel_name);
++}
++
+ int MEDIA_VIDEO_VoInit(PARAM_VO_CFG_S * pstVoCtx)
+ {
+     //vo init
+     CVI_S32 i = 0;
+     CVI_S32 j = 0;
+     PARAM_VO_CONFIG_S * pstVoConfig = NULL;
++    VO_PUB_ATTR_S * pstPubAttr = NULL;
+     VO_VIDEO_LAYER_ATTR_S * pstLayerAttr = NULL;
+     VO_CHN_ATTR_S * pstVOChnAttr = NULL;
+ 
+@@ -978,7 +991,14 @@ int MEDIA_VIDEO_VoInit(PARAM_VO_CFG_S * pstVoCtx)
+     if (pstVoCtx->u8VoCnt == 0) {
+         return CVI_SUCCESS;
+     }
+-    _MEDIA_VIDEO_MIPI_TX_Init();
++
++    pstPubAttr = &pstVoCtx->pstVoCfg[0].stVoConfig.stVoPubAttr;
++    printf("VoPubAttr.enIntfType: %#x\n", pstPubAttr->enIntfType);
++    if (pstPubAttr->enIntfType & VO_INTF_MIPI) {
++        _MEDIA_VIDEO_MIPI_TX_Init();
++    } else if (pstPubAttr->enIntfType & VO_INTF_HW_MCU) {
++        _MEDIA_VIDEO_HW_MCU_Init(pstPubAttr);
++    }
+ 
+     for(i = 0 ;i < pstVoCtx->u8VoCnt;i++) {
+         pstVoConfig = &pstVoCtx->pstVoCfg[i].stVoConfig;
+-- 
+2.25.1
+

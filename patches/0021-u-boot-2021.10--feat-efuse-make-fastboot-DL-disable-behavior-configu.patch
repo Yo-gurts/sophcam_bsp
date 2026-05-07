@@ -1,0 +1,65 @@
+From b4fdc5202112849442fbaaca4d24a16dbfe4883d Mon Sep 17 00:00:00 2001
+From: "song.yu" <song.yu@sophgo.com>
+Date: Thu, 19 Mar 2026 16:02:26 +0800
+Subject: [PATCH] feat(efuse): make fastboot DL disable behavior configurable
+
+[description ]:Add a Kconfig option to keep SD download enabled
+		while still disabling USB/UART in efuse fastboot mode.
+[root   cause]:NA
+[JIRA      ID]:CV184XSDK-1183
+[chip project]:cv184x
+[side effects]:NA
+[Affected *.ko/*.so/*.a] :NA
+
+Change-Id: I551d8c78bb8f950f9b9628a13e2363371b93918e
+---
+ cmd/Kconfig |  8 ++++++++
+ cmd/efuse.c | 13 +++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/cmd/Kconfig b/cmd/Kconfig
+index e397e62ce8..29ca7274fc 100644
+--- a/cmd/Kconfig
++++ b/cmd/Kconfig
+@@ -994,6 +994,14 @@ config EFUSE_ENABLE_FASTBOOT
+ 	  This enables the 'efusew FASTBOOT' command for fastboot, which allows reading
+ 	  and writing efuse bits. This is useful for automatically writing FASTBOOT efuse.
+ 
++config EFUSE_FASTBOOT_KEEP_SD_DL
++	bool "efusew FASTBOOT keep SD download enabled"
++	depends on EFUSE_ENABLE_FASTBOOT
++	default n
++	help
++	  Keep SD download enabled when running 'efusew FASTBOOT'.
++	  If disabled, SD/USB/UART download are all disabled by default.
++
+ config CMD_IDE
+ 	bool "ide - Support for IDE drivers"
+ 	select IDE
+diff --git a/cmd/efuse.c b/cmd/efuse.c
+index 64dfd39158..04abf7a240 100644
+--- a/cmd/efuse.c
++++ b/cmd/efuse.c
+@@ -511,10 +511,15 @@ CVI_S32 CVI_EFUSE_EnableFastBoot(void)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	// set sd dl button
+-	value = (0x1 << 22);
+-	value |= (0x1 << 24);
+-	value |= (0x1 << 26);
++	value = 0;
++#ifndef CONFIG_EFUSE_FASTBOOT_KEEP_SD_DL
++	value |= (0x1 << 22); // SD DL Disable; {bit22:23, 0b00/0b11: SD DL
++		// Enable; 0b01: Fastboot Mode; 0b10: Disable}
++#endif
++	value |= (0x1 << 24); // USB DL Disable; {bit24:25, 0b00/0b11: USB DL
++		// Enable; 0b01: Fastboot Mode; 0b10: Disable}
++	value |= (0x1 << 26); // UART DL Disable; {bit26:27, 0b00/0b11: UART DL
++		// Enable; 0b01: Fastboot Mode; 0b10: Disable}
+ 
+ 	return _CVI_EFUSE_Write(CVI_EFUSE_SW_INFO, &value, sizeof(value));
+ }
+-- 
+2.25.1
+

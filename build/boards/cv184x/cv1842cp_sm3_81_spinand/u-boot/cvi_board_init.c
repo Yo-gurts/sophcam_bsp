@@ -52,5 +52,10 @@ int cvi_board_init(void)
         PINMUX_CONFIG(SD1_D2, PWR_SD1_D2_VO33);
         PINMUX_CONFIG(SD1_D3, PWR_SD1_D3_VO32);
 
+        // PWR_SEQ1 pinmux unlock
+        printf("PWR_SEQ1 pinmux unlock\n");
+        mmio_write_32(0x05027078, 0x11);
+        PINMUX_CONFIG(PWR_SEQ1, PWR_GPIO_3); // LCD_RST
+
         return 0;
 }

@@ -1,0 +1,144 @@
+From a024bad4768559139d5fa8194ac9c5b9f6c31981 Mon Sep 17 00:00:00 2001
+From: "song.yu" <song.yu@sophgo.com>
+Date: Mon, 23 Mar 2026 18:03:48 +0800
+Subject: [PATCH] [feat](efuse): enable fastboot support in spl
+
+[description ]:NA
+[root   cause]:NA
+[JIRA      ID]:CV184XSDK-1149
+[chip project]:NA
+[side effects]:NA
+[Affected *.ko/*.so/*.a] :NA
+
+Change-Id: I83f38d36b79e1f9181a18f4f1d33a048e14bc983
+---
+ board/cvitek/cv180x/board.c | 5 +++++
+ board/cvitek/cv181x/board.c | 6 ++++++
+ board/cvitek/cv184x/board.c | 6 ++++++
+ cmd/Kconfig                 | 6 ++++++
+ cmd/Makefile                | 9 +++++++--
+ 5 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/board/cvitek/cv180x/board.c b/board/cvitek/cv180x/board.c
+index bfd1061b13..93f27a53f4 100644
+--- a/board/cvitek/cv180x/board.c
++++ b/board/cvitek/cv180x/board.c
+@@ -22,6 +22,7 @@
+ #include "cv180x_pinlist_swconfig.h"
+ #include <linux/delay.h>
+ #include <bootstage.h>
++#include <cvitek/cvi_efuse.h>
+ 
+ #if defined(__riscv)
+ #include <asm/csr.h>
+@@ -230,6 +231,10 @@ int board_init(void)
+ 	//pinmux_config(PINMUX_SPI2);
+ 	cvi_board_init();
+ 
++#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_EFUSE_ENABLE_FASTBOOT)
++	CVI_EFUSE_EnableFastBoot();
++#endif
++
+ 	return 0;
+ }
+ 
+diff --git a/board/cvitek/cv181x/board.c b/board/cvitek/cv181x/board.c
+index 0b17a28788..25d716e068 100644
+--- a/board/cvitek/cv181x/board.c
++++ b/board/cvitek/cv181x/board.c
+@@ -22,6 +22,7 @@
+ #include "cv181x_pinlist_swconfig.h"
+ #include <linux/delay.h>
+ #include <bootstage.h>
++#include <cvitek/cvi_efuse.h>
+ 
+ #if defined(__riscv)
+ #include <asm/csr.h>
+@@ -244,6 +245,11 @@ int board_init(void)
+ */
+ 	pinmux_config(PINMUX_SDIO1);
+ 	cvi_board_init();
++
++#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_EFUSE_ENABLE_FASTBOOT)
++	CVI_EFUSE_EnableFastBoot();
++#endif
++
+ 	return 0;
+ }
+ 
+diff --git a/board/cvitek/cv184x/board.c b/board/cvitek/cv184x/board.c
+index 116d02337e..b4e25f4bbf 100644
+--- a/board/cvitek/cv184x/board.c
++++ b/board/cvitek/cv184x/board.c
+@@ -23,6 +23,7 @@
+ #include "cv184x_pinlist_swconfig.h"
+ #include <linux/delay.h>
+ #include <bootstage.h>
++#include <cvitek/cvi_efuse.h>
+ // #include <configs/cv184x-asic.h>
+ 
+ #if defined(__riscv)
+@@ -304,6 +305,11 @@ int board_init(void)
+ 	PINMUX_CONFIG(IIC3_SCL, IIC3_SCL);
+ 	PINMUX_CONFIG(IIC3_SDA, IIC3_SDA);
+ 	cvi_board_init();
++
++#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_EFUSE_ENABLE_FASTBOOT)
++	CVI_EFUSE_EnableFastBoot();
++#endif
++
+ 	return 0;
+ }
+ 
+diff --git a/cmd/Kconfig b/cmd/Kconfig
+index 29ca7274fc..c9e015eaa9 100644
+--- a/cmd/Kconfig
++++ b/cmd/Kconfig
+@@ -994,6 +994,12 @@ config EFUSE_ENABLE_FASTBOOT
+ 	  This enables the 'efusew FASTBOOT' command for fastboot, which allows reading
+ 	  and writing efuse bits. This is useful for automatically writing FASTBOOT efuse.
+ 
++config SPL_EFUSE_ENABLE_FASTBOOT
++	bool "Enable FASTBOOT efuse in SPL"
++	depends on SPL && EFUSE_ENABLE_FASTBOOT
++	help
++	  Enable FASTBOOT efuse programming from SPL board init.
++
+ config EFUSE_FASTBOOT_KEEP_SD_DL
+ 	bool "efusew FASTBOOT keep SD download enabled"
+ 	depends on EFUSE_ENABLE_FASTBOOT
+diff --git a/cmd/Makefile b/cmd/Makefile
+index 5c538dd938..2ce65725cf 100644
+--- a/cmd/Makefile
++++ b/cmd/Makefile
+@@ -204,7 +204,6 @@ obj-$(CONFIG_CMD_AVB) += avb.o
+ # Foundries.IO SCP03
+ obj-$(CONFIG_CMD_SCP03) += scp03.o
+ 
+-obj-y += efuse.o
+ obj-y += spacc.o
+ obj-$(CONFIG_ARM) += arm/
+ obj-$(CONFIG_RISCV) += riscv/
+@@ -214,6 +213,12 @@ obj-$(CONFIG_X86) += x86/
+ obj-$(CONFIG_ARCH_MVEBU) += mvebu/
+ endif # !CONFIG_SPL_BUILD
+ 
++ifdef CONFIG_SPL_BUILD
++obj-$(CONFIG_SPL_EFUSE_ENABLE_FASTBOOT) += efuse.o
++else
++obj-y += efuse.o
++endif
++
+ obj-$(CONFIG_CMD_UBI) += ubi.o
+ obj-$(CONFIG_CMD_UBIFS) += ubifs.o
+ 
+@@ -269,4 +274,4 @@ CFLAGS_ethsw.o := -Wno-enum-conversion
+ obj-y += ../drivers/crypto/sophon_spacc.o
+ UBOOTINCLUDE+=-I$(srctree)/drivers/crypto
+ 
+-obj-y += update_ion.o
+\ No newline at end of file
++obj-y += update_ion.o
+-- 
+2.25.1
+

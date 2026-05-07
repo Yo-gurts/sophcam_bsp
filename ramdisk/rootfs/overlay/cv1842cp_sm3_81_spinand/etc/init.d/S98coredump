@@ -1,0 +1,26 @@
+#!/bin/sh
+${CVI_SHOPTS}
+
+CORE_DIR=/mnt/data/coredump
+CORE_HANDLER=/sbin/coredump-handler.sh
+CORE_PATTERN="|$CORE_HANDLER %e %p %t %s"
+
+case "$1" in
+  start)
+	if [ ! -d /mnt/data ] || [ ! -w /mnt/data ]; then
+		exit 0
+	fi
+
+	mkdir -p "$CORE_DIR" || exit 0
+
+	rm -f "$CORE_DIR"/.core.* "$CORE_DIR"/.meta.* "$CORE_DIR"/.seq.tmp.*
+	rmdir "$CORE_DIR"/.lock 2>/dev/null
+	rm -f /mnt/data/core-* "$CORE_DIR"/core-* /mnt/data/core_dump_bin /mnt/data/core_dump_filename
+
+	echo "$CORE_PATTERN" > /proc/sys/kernel/core_pattern
+	echo 1 > /proc/sys/kernel/core_uses_pid
+
+	;;
+esac
+
+exit $?
