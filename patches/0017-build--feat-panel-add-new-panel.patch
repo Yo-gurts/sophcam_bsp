@@ -1,0 +1,29 @@
+From 9d17a544ed75afe9124ec358177df94a67e47d77 Mon Sep 17 00:00:00 2001
+From: "song.yu" <song.yu@sophgo.com>
+Date: Mon, 13 Apr 2026 15:50:16 +0800
+Subject: [PATCH] feat(panel): add new panel
+
+Change-Id: I214ae35ced3c95a24a8b0a14d62e81004b74f333
+---
+ panels/panel_list.json | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/panels/panel_list.json b/panels/panel_list.json
+index 000d4da6..4c894e3e 100644
+--- a/panels/panel_list.json
++++ b/panels/panel_list.json
+@@ -11,7 +11,10 @@
+ 			"icn9707",
+ 			"3aml069lp01g",
+ 			"st7701",
+-			"st7785m"
++			"st7785m",
++			"st7703",
++			"jd9161c",
++			"bjx2836f0"
+ 		],
+ 		"lvds" : [
+ 			"ek79202"
+-- 
+2.25.1
+

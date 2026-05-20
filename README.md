@@ -6,7 +6,7 @@
 
 ## 配置文件
 
-`repo_config` 中定义了bsp、app使用的xml配置文件，以及各个仓库对应的git版本文件。没有应用的版本可以选择移除 app 部分。
+`manifest/repo_config` 中定义了 bsp、app 使用的 xml 配置文件，以及各个仓库对应的 git 版本文件。没有应用的版本可以选择移除 app 部分。
 
 ```json
 {
@@ -44,7 +44,7 @@ git clone -b v6.3.3-20260324 git@github.com:Yo-gurts/sophcam_bsp.git sm3_81_bsp
 
 ```bash
 # 拉取 SDK 代码，一定要使用reproduce切换到特定版本的SDK，否则可能出现patch冲突！
-./sm3_81_bsp/scripts/repos --gitclone --reproduce --hostslave
+./sm3_81_bsp/scripts/repos --gitclone --reproduce
 
 # 打上额外的patch到SDK代码（修复该版本已知的bug或者添加新的功能）
 ./sm3_81_bsp/scripts/repos --applypatch
@@ -156,7 +156,5 @@ clean_all && build_all
 
 ```bash
 # 发布 release 版本
-./scripts/release.sh
-
-rsync -av --delete --exclude .git sm3_81_bsp_rls/ ../github_sm3_81_bsp/
+./scripts/repos --release ../github_sm3_81_bsp
 ```

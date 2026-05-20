@@ -1,4 +1,4 @@
-From e5e7f53fd0d5c026109412dc9f88717670e27f9b Mon Sep 17 00:00:00 2001
+From 1f00cf063d13e12f2e6c042d4e492a549ae4d14c Mon Sep 17 00:00:00 2001
 From: "song.yu" <song.yu@sophgo.com>
 Date: Mon, 13 Apr 2026 15:24:45 +0800
 Subject: [PATCH] feat: support SD burn show progress logo
@@ -14,11 +14,10 @@ Change-Id: I4ff40558fef6c7dc129154d38179c61b022a152f
 ---
  cmd/Kconfig                               |   14 +
  cmd/cvi_jpeg.c                            |   45 +-
- cmd/cvi_update.c                          |   74 +-
+ cmd/cvi_update.c                          |   69 +
  cmd/cvi_vo.c                              |   65 +-
  drivers/jpeg/jpeg.c                       |    4 +-
  drivers/jpeg/jpeg.h                       |    2 +-
- drivers/jpeg/jpuapi.h                     |   12 +-
  drivers/video/cfb_console.c               |    2 +-
  drivers/video/cvitek/cvi_disp.c           |   73 +-
  drivers/video/cvitek/cvi_i80_hw.c         |   57 +-
@@ -31,7 +30,7 @@ Change-Id: I4ff40558fef6c7dc129154d38179c61b022a152f
  include/cvitek/cvi_panels/dsi_jd9161c.h   |  138 ++
  include/cvitek/cvi_panels/dsi_st7703.h    |  118 ++
  include/cvitek/logo_data.h                | 2303 +++++++++++++++++++++
- 19 files changed, 3183 insertions(+), 104 deletions(-)
+ 18 files changed, 3173 insertions(+), 97 deletions(-)
  create mode 100644 include/cvitek/cvi_panels/dsi_bjx2836f0.h
  create mode 100644 include/cvitek/cvi_panels/dsi_jd9161c.h
  create mode 100644 include/cvitek/cvi_panels/dsi_st7703.h
@@ -137,7 +136,7 @@ index 6cfe1b98a7..295f537774 100644
 +	"cvi_jpeg_dec <bs_addr> <yuv_addr> <size> [rotation]\n"
 +	"rotation: optional, 0/90/180/270, default from cvitek,vo/uboot-rotation");
 diff --git a/cmd/cvi_update.c b/cmd/cvi_update.c
-index 07e0b1fc51..81f11c10ad 100644
+index 07e0b1fc51..bce02df294 100644
 --- a/cmd/cvi_update.c
 +++ b/cmd/cvi_update.c
 @@ -11,6 +11,10 @@
@@ -227,16 +226,10 @@ index 07e0b1fc51..81f11c10ad 100644
  		// Consider SD card with MBR as default
  #if defined(CONFIG_NAND_SUPPORT) || defined(CONFIG_SPI_FLASH)
  		strlcpy(strStorage, "mmc 0:1", 9);
-@@ -281,10 +347,12 @@ static int _storage_update(enum storage_type_e type)
- 		ret = run_command(cmd, 0);
- 		if (ret) {
- 			printf("load %s failed, skip it!\n", imgs[i]);
--			continue;
-+		} else {
-+			_checkHeader(imgs[i], strStorage);
+@@ -285,6 +351,9 @@ static int _storage_update(enum storage_type_e type)
  		}
--		if (_checkHeader(imgs[i], strStorage))
--			continue;
+ 		if (_checkHeader(imgs[i], strStorage))
+ 			continue;
 +#ifdef CONFIG_SD_BURNLOGO
 +		update_burnlogo((i + 1) * 100 / ARRAY_SIZE(imgs));
 +#endif // CONFIG_SD_BURNLOGO
@@ -391,31 +384,6 @@ index dd6e6a14cd..e29076cc25 100644
 +int jpeg_decoder(void *bs_addr, void *yuv_addr, int size, int rotation);
  
  #endif
-diff --git a/drivers/jpeg/jpuapi.h b/drivers/jpeg/jpuapi.h
-index 4f47c5a6b0..b7bc926314 100644
---- a/drivers/jpeg/jpuapi.h
-+++ b/drivers/jpeg/jpuapi.h
-@@ -4,12 +4,16 @@
- #include "jpuconfig.h"
- #include "jdi.h"
- 
-+#define CVI_JPG_DEBUG 0
-+
-+#if CVI_JPG_DEBUG
- #define CVI_JPG_DBG(msg, ...) \
--	do {\
--		if (1) {\
--			printf("[DBG] %s = %d, " msg, __func__, __LINE__, ##__VA_ARGS__);\
--		} \
-+	do { \
-+		printf("[DBG] %s = %d, " msg, __func__, __LINE__, ##__VA_ARGS__); \
- 	} while (0)
-+#else
-+#define CVI_JPG_DBG(msg, ...) do { } while (0)
-+#endif
- 
- #define ALIGN_X(IN, ALIGN)     (((IN) + (ALIGN) - 1) / (ALIGN) * (ALIGN))
- #define ALIGN_32
 diff --git a/drivers/video/cfb_console.c b/drivers/video/cfb_console.c
 index 5e1ee061e8..71d7d46abb 100644
 --- a/drivers/video/cfb_console.c
